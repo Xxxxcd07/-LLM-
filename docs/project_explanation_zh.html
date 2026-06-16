@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>损失曲线跨学习率调度预测项目说明</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #5c6675;
+      --paper: #ffffff;
+      --wash: #f4f7fb;
+      --line: #d8dee8;
+      --blue: #1f5f99;
+      --teal: #18736f;
+      --green: #2f6c45;
+      --gold: #9a6818;
+      --red: #9a3d3d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      line-height: 1.72;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .hero {
+      min-height: 62vh;
+      display: grid;
+      align-items: end;
+      color: #fff;
+      background:
+        linear-gradient(90deg, rgba(14, 29, 46, 0.88), rgba(14, 29, 46, 0.62), rgba(14, 29, 46, 0.3)),
+        url("../results/figures/fsl_light_comparison.png") center / cover no-repeat,
+        #1f3146;
+      border-bottom: 1px solid #23364d;
+    }
+
+    .wrap {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .hero-inner {
+      padding: 56px 0 42px;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: #9fd8d0;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 920px;
+      margin: 0;
+      font-size: clamp(30px, 5vw, 56px);
+      line-height: 1.12;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      max-width: 900px;
+      margin: 18px 0 0;
+      color: #e7edf5;
+      font-size: 18px;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(8px);
+    }
+
+    nav .wrap {
+      display: flex;
+      gap: 18px;
+      overflow-x: auto;
+      padding: 10px 0;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+
+    section {
+      padding: 38px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    section:nth-of-type(even) {
+      background: var(--wash);
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 26px;
+      line-height: 1.28;
+    }
+
+    h3 {
+      margin: 24px 0 8px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    code {
+      padding: 2px 5px;
+      border: 1px solid #d7dde8;
+      border-radius: 4px;
+      background: #f5f7fa;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.95em;
+    }
+
+    pre {
+      overflow-x: auto;
+      margin: 14px 0 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: #111827;
+      color: #f5f7fb;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    pre code {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .metric-card,
+    .note,
+    .file-box {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 16px;
+    }
+
+    .metric-card {
+      border-top: 4px solid var(--teal);
+      min-height: 156px;
+    }
+
+    .metric-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 17px;
+    }
+
+    .metric-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .note {
+      margin-top: 18px;
+      border-left: 4px solid var(--gold);
+      background: #fff8e8;
+    }
+
+    .note.good {
+      border-left-color: var(--green);
+      background: #f0f8f2;
+    }
+
+    .note.warn {
+      border-left-color: var(--red);
+      background: #fff1f1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 0;
+      background: #fff;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eaf0f7;
+      font-weight: 700;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .step {
+      position: relative;
+      min-height: 130px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .step b {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--blue);
+    }
+
+    .figure-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    figure {
+      margin: 0;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    figcaption {
+      padding: 10px 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .file-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .file-box {
+      font-size: 14px;
+    }
+
+    footer {
+      padding: 26px 0 42px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 860px) {
+      .hero {
+        min-height: 58vh;
+      }
+
+      .grid,
+      .pipeline,
+      .figure-grid,
+      .file-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap hero-inner">
+      <p class="eyebrow">Final Project Explanation</p>
+      <h1>跨学习率调度的 LLM 预训练损失曲线预测</h1>
+      <p class="subtitle">
+        本项目基于 Multi-Power Law 原仓库，构建一个可复现的 loss-curve prediction 实验 pipeline：
+        用 cosine schedule 拟合预测器，再外推到 WSD / WSDLD，并通过 Tissue baseline、full ridge 诊断和
+        FSL-light residual correction 分析学习率衰减阶段的系统误差。
+      </p>
+    </div>
+  </header>
+
+  <nav>
+    <div class="wrap">
+      <a href="#goal">项目目标</a>
+      <a href="#method">方法设计</a>
+      <a href="#experiment">实验流程</a>
+      <a href="#results">结果解读</a>
+      <a href="#outputs">输出文件</a>
+      <a href="#run">复现方式</a>
+    </div>
+  </nav>
+
+  <main>
+    <section id="goal">
+      <div class="wrap">
+        <h2>1. 项目目标</h2>
+        <p>
+          真实的大模型训练经常会改变学习率调度，例如从 cosine 转向 WSD 或 WSDLD。这个项目关注的问题是：
+          如果只在一种学习率 schedule 上观察到 loss curve，能否预测另一种 schedule 下的完整损失曲线。
+        </p>
+        <p>
+          项目不重新训练 LLM，而是使用仓库中已有的 25M、100M、400M 三个规模的 loss curve CSV，
+          比较不同预测方法在跨 schedule 外推时的稳定性、误差结构和可解释性。
+        </p>
+
+        <div class="grid">
+          <article class="metric-card">
+            <strong>输入数据</strong>
+            <span><code>loss_curve_repo/csv_25</code>、<code>csv_100</code>、<code>csv_400</code> 中的 step、lr、loss 曲线。</span>
+          </article>
+          <article class="metric-card">
+            <strong>训练设置</strong>
+            <span>主实验只用 <code>cosine_24000.csv</code> 拟合，然后测试 WSD、WSDLD 和辅助泛化曲线。</span>
+          </article>
+          <article class="metric-card">
+            <strong>核心问题</strong>
+            <span>学习率衰减阶段是否会让 cosine-trained predictor 出现系统误差，轻量 correction 是否更稳。</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="method">
+      <div class="wrap">
+        <h2>2. 方法设计</h2>
+        <p>项目实现了三层方法：先有基线预测器，再加入残差修正，最后用 FSL-light 降低 full ridge 的过拟合风险。</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>方法</th>
+              <th>作用</th>
+              <th>解释</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>MPL</td>
+              <td>主要强基线</td>
+              <td>使用 Multi-Power Law 建模累计学习率和学习率变化带来的 loss drop。</td>
+            </tr>
+            <tr>
+              <td>Tissue Annealing Law</td>
+              <td>可解释 baseline</td>
+              <td>用累计学习率 <code>S1</code> 和 decay memory <code>S2</code> 描述学习率退火影响。</td>
+            </tr>
+            <tr>
+              <td>Full ridge correction</td>
+              <td>过拟合诊断</td>
+              <td>使用较多 schedule 特征学习残差；当它在 WSD/WSDLD 上失败时，不是 bug，而是 cosine-only residual learning 的过拟合信号。</td>
+            </tr>
+            <tr>
+              <td>FSL-light correction</td>
+              <td>方向 A 主线</td>
+              <td>只保留 <code>bias</code>、<code>log_tau</code>、<code>eta_norm</code>、<code>decay_conv</code>、<code>is_decay</code> 等少量 schedule functional。</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note good">
+          FSL-light 的目标不是保证一定超过 MPL，而是用更少、更可解释的特征替代 naive feature stacking。
+          即使结果不能全面胜出，它也能形成可信的 negative finding：跨 schedule residual correction 不能简单堆特征。
+        </div>
+      </div>
+    </section>
+
+    <section id="experiment">
+      <div class="wrap">
+        <h2>3. 实验流程</h2>
+        <div class="pipeline">
+          <div class="step">
+            <b>Step 1</b>
+            读取每个模型规模下的 loss curve 和 learning-rate schedule。
+          </div>
+          <div class="step">
+            <b>Step 2</b>
+            在 cosine 曲线上拟合 Tissue 与 MPL base predictor。
+          </div>
+          <div class="step">
+            <b>Step 3</b>
+            对 base predictor 的 residual 分别训练 full ridge 与 FSL-light correction。
+          </div>
+          <div class="step">
+            <b>Step 4</b>
+            在 WSD、WSDLD 和辅助曲线上预测完整 loss curve。
+          </div>
+          <div class="step">
+            <b>Step 5</b>
+            输出整体指标、stage-wise 指标、alpha sweep、prediction CSV 和报告图表。
+          </div>
+        </div>
+
+        <h3>阶段划分</h3>
+        <p>
+          误差不仅看整条曲线，还分为 <code>warmup_or_start</code>、<code>post_warmup_stable</code>、
+          <code>decay</code> 和 <code>long_horizon</code>。其中 stable 与 decay 的对比最能说明 WSD/WSDLD
+          的学习率衰减是否带来了额外预测难度。
+        </p>
+      </div>
+    </section>
+
+    <section id="results">
+      <div class="wrap">
+        <h2>4. 当前结果摘要</h2>
+        <p>
+          以下数值来自 <code>results/metrics/cross_schedule_metrics.csv</code>，只统计 WSD 与 WSDLD 两条主测试曲线，
+          对 25M、100M、400M 三个规模取平均。
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>方法</th>
+              <th>平均 RMSE</th>
+              <th>平均 final relative error</th>
+              <th>平均 AUC relative error</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tissue</td>
+              <td>0.010101</td>
+              <td>0.004618</td>
+              <td>0.002255</td>
+              <td>简单、可解释，当前整体稳定。</td>
+            </tr>
+            <tr>
+              <td>Tissue + full ridge</td>
+              <td>0.023623</td>
+              <td>0.006110</td>
+              <td>0.006522</td>
+              <td>RMSE 变差，说明 full 特征可能过拟合 cosine residual。</td>
+            </tr>
+            <tr>
+              <td>Tissue + FSL-light</td>
+              <td>0.022299</td>
+              <td>0.004571</td>
+              <td>0.006112</td>
+              <td>比 full ridge 略稳，但整条曲线仍未超过 Tissue baseline。</td>
+            </tr>
+            <tr>
+              <td>MPL</td>
+              <td>0.010571</td>
+              <td>0.010235</td>
+              <td>0.001878</td>
+              <td>强 baseline，适合作为主对照。</td>
+            </tr>
+            <tr>
+              <td>MPL + full ridge</td>
+              <td>0.028372</td>
+              <td>0.007102</td>
+              <td>0.007580</td>
+              <td>final error 有改善，但 RMSE 明显变差。</td>
+            </tr>
+            <tr>
+              <td>MPL + FSL-light</td>
+              <td>0.028353</td>
+              <td>0.010768</td>
+              <td>0.006129</td>
+              <td>没有超过 MPL baseline，但提供了轻量 correction 的对照证据。</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note warn">
+          最终汇报不应写成“FSL-light 必然更好”。更稳妥的结论是：本项目系统检验了跨 schedule residual correction，
+          并发现课程数据规模下，full ridge 的失败是重要诊断，FSL-light 提供了更克制、更有文献动机的替代方案。
+        </div>
+
+        <div class="figure-grid">
+          <figure>
+            <img src="../results/figures/fsl_light_comparison.png" alt="FSL-light 与 baseline 对比图" loading="lazy">
+            <figcaption>Baseline、full ridge 与 FSL-light 在 WSD/WSDLD 上的 RMSE 对比。</figcaption>
+          </figure>
+          <figure>
+            <img src="../results/figures/stage_fsl_light_error.png" alt="FSL-light stage-wise 误差图" loading="lazy">
+            <figcaption>Stable 与 decay 阶段的 stage-wise RMSE，帮助定位误差是否集中在学习率衰减段。</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="outputs">
+      <div class="wrap">
+        <h2>5. 主要输出文件</h2>
+        <p>完整运行后，结果会写入 <code>results/</code>。下面这些文件最适合用于报告、答辩和复查。</p>
+
+        <div class="file-list">
+          <div class="file-box"><code>results/metrics/cross_schedule_metrics.csv</code><br>主实验整体指标，共 108 行。</div>
+          <div class="file-box"><code>results/metrics/fsl_light_metrics.csv</code><br>只包含 FSL-light correction 的指标，共 36 行。</div>
+          <div class="file-box"><code>results/metrics/stage_metrics.csv</code><br>分阶段误差指标，共 432 行。</div>
+          <div class="file-box"><code>results/metrics/alpha_sweep_metrics.csv</code><br>FSL-light ridge alpha 稳健性结果，共 48 行。</div>
+          <div class="file-box"><code>results/predictions/*.csv</code><br>逐 step 的真实 loss、预测 loss 和 residual。</div>
+          <div class="file-box"><code>results/figures/*.png</code><br>学习率曲线、预测诊断、FSL-light 对比和消融图。</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="run">
+      <div class="wrap">
+        <h2>6. 复现方式</h2>
+        <p>在项目根目录运行以下命令即可重新生成测试、指标和图表：</p>
+        <pre><code>pip install -r requirements.txt
+python -m pytest tests -q
+python scripts/run_reproduction.py
+python scripts/run_cross_schedule.py
+python scripts/run_ablation.py
+python scripts/make_figures.py</code></pre>
+
+        <h3>推荐阅读顺序</h3>
+        <p>
+          先看 <code>src/splits.py</code> 理解实验划分，再看 <code>src/features.py</code> 和
+          <code>src/correction.py</code> 理解 residual correction，最后看
+          <code>scripts/run_cross_schedule.py</code>、<code>scripts/run_ablation.py</code> 和
+          <code>scripts/make_figures.py</code> 理解完整 pipeline。
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      生成日期：2026-06-15。相关文档：
+      <a href="final_project_overview_zh.md">final_project_overview_zh.md</a>，
+      <a href="task2_improvement_plan_zh.html">task2_improvement_plan_zh.html</a>。
+    </div>
+  </footer>
+</body>
+</html>
