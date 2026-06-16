@@ -1,32 +1,34 @@
-# Final Project 全项目说明文档
+# Final Project Overview：跨学习率调度的 LLM 预训练损失曲线预测
 
 项目题目：Predicting LLM Pretraining Loss Curves across Learning-Rate Schedules
 
-本文档用于解释本 final project 的完整实现思路：研究问题是什么，核心模型为什么这样设计，代码模块如何对应数学原理，实验脚本如何运行，以及指标、表格和图表分别说明什么。
+本文档根据 `docs/task2_improvement_plan_zh.html` 和当前已经完成的三个提升方向，重新整理整个 final project 的实现逻辑、实验设计、结果解释和答辩叙事。它的定位不是逐行 API 手册，而是帮助读者快速理解：这个项目为什么这样做、三个方向分别解决什么问题、当前结果支持怎样的结论，以及应该如何复现。
 
-## 1. 项目目标
+## 1. 项目定位与最终叙事
 
-本项目研究的问题是：如果只观察某些学习率调度下的预训练损失曲线，能否预测另一类学习率调度下的损失曲线，尤其是 WSD 和 WSDLD 这类带有学习率衰减阶段的 schedule。
+本项目研究的问题是：如果只观察一种学习率调度下的预训练损失曲线，能否预测另一类学习率调度下的损失曲线，尤其是 WSD 和 WSDLD 这类带有明显学习率衰减阶段的 schedule。
 
-更具体地说，仓库中已经提供了不同模型规模、不同学习率调度下的损失曲线。我们不训练新的 LLM，而是在这些已有曲线之上拟合 loss-curve predictor。项目重点不是重新跑大模型预训练，而是比较不同损失曲线预测公式在跨 learning-rate schedule 时的外推能力。
+项目不重新训练 LLM，而是使用课程提供的已有 loss curves，在这些曲线之上拟合 loss-curve predictor。核心设置是：
 
-本项目实现了三类预测器：
+1. 用 `cosine_24000.csv` 作为严格训练曲线。
+2. 在 `wsd_20000_24000.csv` 和 `wsdld_20000_24000.csv` 上评估跨 schedule 外推。
+3. 同时保留 `cosine_72000.csv`、`constant_72000.csv`、`wsdcon_3.csv`、`wsdcon_18.csv` 作为辅助泛化检查。
 
-1. MPL, Multi-Power Law, 对应原仓库中的主要 loss prediction 形式。
-2. Tissue Annealing Law, 一个较简单、可解释的 annealing baseline。
-3. Base predictor + residual correction, 在 MPL 或 Tissue 的基础上，用学习率相关特征修正残差；其中 full ridge 作为过拟合诊断，FSL-light 作为轻量、可解释的最终对比方案。
+Task 2 提升计划最初提出三个方向：
 
-核心实验问题是：
+| 方向 | 实现状态 | 当前解释 |
+| --- | --- | --- |
+| A. FSL-light residual correction | 已实现 | 用少量 FSL-inspired schedule functional 替代 full ridge 特征堆叠；结果显示它比 naive full ridge 略克制，但没有稳定超过 Tissue/MPL baseline。 |
+| B. 稳健性和不确定性实验 | 已实现 | 增加 ridge alpha sweep、MPL multi-start、stage sensitivity，帮助解释结果是否受超参数、初值和训练阶段影响。 |
+| C. NCPL-style neural surrogate | 已实现 | 增加直接神经 surrogate 作为高风险 baseline；当前误差很大，支持“课程数据规模太小，不宜把神经 surrogate 作为主结论”的判断。 |
 
-1. MPL 是否能从 cosine schedule 外推到 WSD/WSDLD schedule。
-2. Tissue 这种 decay-memory 形式是否能捕捉学习率衰减带来的误差结构。
-3. 用 residual correction 加入学习率衰减特征后，是否能改善跨 schedule 预测。
-4. full ridge 的失败是否揭示了 cosine-only 训练下的过拟合风险，FSL-light 是否能提供更稳健的轻量替代。
-5. 哪些特征对残差修正最有用。
+因此，本项目最终叙事不应写成“新方法全面优于 baseline”。更稳妥也更有学术价值的结论是：
 
-## 2. 数据与实验划分
+> 本项目复现并扩展了 Multi-Power Law loss prediction，在严格 cosine-to-WSD/WSDLD 外推设置下系统检验了 residual correction 的可行性。实验发现 Tissue 和 MPL baseline 已经很强；naive full ridge 容易过拟合 cosine residual；FSL-light 和 alpha sweep 说明低复杂度 schedule functional 能缓解一部分过拟合，但不能保证超过 baseline；NCPL-style surrogate 在小数据设置下明显不稳，适合作为 future work 而不是最终方法。
 
-数据由 `src.config.FOLDER_PATHS` 指定，当前路径为：
+## 2. 数据、规模与实验划分
+
+数据目录由 `src/config.py` 管理，当前使用三个模型规模：
 
 ```text
 loss_curve_repo/csv_25
@@ -34,67 +36,30 @@ loss_curve_repo/csv_100
 loss_curve_repo/csv_400
 ```
 
-每个 CSV 包含三列：
+每个 CSV 包含：
 
 ```text
 step, lr, loss
 ```
 
-其中 `step` 是训练步数索引，`lr` 是该步学习率，`loss` 是观测到的训练损失。
+其中 `step` 是训练步数，`lr` 是当前学习率，`loss` 是观测训练损失。
 
-实验规模由 `src/splits.py` 统一管理：
+`src/splits.py` 统一定义实验划分：
 
 ```python
 SIZES = ["25", "100", "400"]
-```
 
-即 25M、100M、400M 三个模型规模。
-
-### 2.1 复现实验划分
-
-`run_reproduction.py` 使用 `REPRODUCTION_TRAIN_CURVES` 作为训练曲线：
-
-```python
-REPRODUCTION_TRAIN_CURVES = [
+STRICT_COSINE_TRAIN_CURVES = [
     "cosine_24000.csv",
-    "constant_24000.csv",
-    "wsdcon_9.csv",
 ]
-```
 
-评估曲线为：
-
-```python
 MAIN_TEST_CURVES = [
     "wsd_20000_24000.csv",
     "wsdld_20000_24000.csv",
 ]
-
-AUX_TEST_CURVES = [
-    "constant_72000.csv",
-    "cosine_72000.csv",
-    "wsdcon_3.csv",
-    "wsdcon_18.csv",
-]
 ```
 
-因此复现实验会在 6 条评估曲线上比较 Tissue 和 MPL。
-
-### 2.2 主实验划分
-
-主实验更严格，只用 cosine 训练：
-
-```python
-STRICT_COSINE_TRAIN_CURVES = [
-    "cosine_24000.csv",
-]
-```
-
-然后评估到 WSD、WSDLD 和辅助曲线。这个设置对应项目真正关心的跨 schedule 外推：模型只在 cosine loss curve 上拟合，然后看它面对学习率衰减 schedule 时会不会系统性偏差。
-
-### 2.3 阶段划分
-
-`src/splits.py` 中定义了训练过程的四个阶段：
+阶段划分同样由 `src/splits.py` 管理：
 
 ```python
 PHASES = {
@@ -105,23 +70,25 @@ PHASES = {
 }
 ```
 
-`phase_mask()` 使用半开区间：
+这个阶段划分很重要，因为 WSD/WSDLD 的关键难点并不只是整条曲线 RMSE，而是 stable-to-decay transition 之后的误差结构是否发生系统变化。
 
-```python
-(steps >= start) & (steps < end)
-```
+## 3. 整体 pipeline
 
-如果 `end is None`，则使用：
+最终实现围绕五条实验线组织：
 
-```python
-steps >= start
-```
+1. `scripts/run_reproduction.py`：复现 Tissue 和 MPL 在 paper-like split 下的表现。
+2. `scripts/run_cross_schedule.py`：主实验，只用 cosine 训练，评估到 WSD/WSDLD 和辅助曲线，并加入 full ridge 与 FSL-light residual correction。
+3. `scripts/run_ablation.py`：比较不同 residual feature set，并做 FSL-light ridge alpha sweep。
+4. `scripts/run_robustness.py`：做 MPL multi-start uncertainty 和 stage sensitivity 汇总。
+5. `scripts/run_ncpl_surrogate.py`：运行 NCPL-style direct neural surrogate。
 
-这个阶段划分用于 `stage_metrics.csv`。它帮助我们判断误差主要出现在 warmup、稳定训练段、decay 段，还是 24000 step 之后的 long-horizon 外推段。
+图表统一由 `scripts/make_figures.py` 生成。它读取 `results/metrics/*.csv` 和 `results/predictions/*.csv`，输出可直接放进报告或 slides 的 PNG。
 
-## 3. MPL 预测器
+## 4. 基线模型：MPL 与 Tissue
 
-MPL 的预测入口是 `src/predictors.py` 中的：
+### 4.1 MPL
+
+MPL 预测器位于 `src/predictors.py`：
 
 ```python
 predict_mpl_curve(lrs, steps, params)
@@ -133,351 +100,74 @@ predict_mpl_curve(lrs, steps, params)
 l0, a, alpha, b, c, beta, gamma = params
 ```
 
-代码中的主项是 cumulative learning-rate power law：
-
-```python
-lr_sum = np.cumsum(lrs)
-s1 = lr_sum[steps]
-l0 + a * np.maximum(s1, 1e-12) ** (-alpha)
-```
-
-这里的 `s1` 可以理解为到当前 step 为止累计用掉的 learning-rate budget。随着训练推进，`s1` 增大，`s1 ** (-alpha)` 逐渐下降，因此损失预测值也随训练逐渐下降。
-
-MPL 还包含学习率变化项 `ld`。代码中计算方式是：
-
-```python
-lr_gap[1:] = np.diff(lrs)
-scaled = lrs[1 : step + 1] ** (-gamma) * (lr_sum[step] - lr_sum[:step])
-ld[i] = np.sum(
-    lr_gap[1 : step + 1] * (1 - (1 + c * scaled) ** (-beta))
-)
-```
-
-整体预测为：
-
-```python
-loss_pred = l0 + a * s1 ** (-alpha) + b * ld
-```
-
-直观解释：
-
-1. `l0` 是不可约损失或最终损失下界。
-2. `a * s1 ** (-alpha)` 描述随着累计训练量增加，loss 按 power law 下降。
-3. `ld` 用学习率变化 `lr_gap` 和历史累计学习率差值建模 schedule 改变造成的影响。
-4. `b, c, beta, gamma` 控制学习率变化项的幅度、饱和形式和时间尺度。
-
-在 `scripts/run_reproduction.py` 中，MPL 默认使用 `src.config.PARAMS` 里的预计算参数：
-
-```python
-mpl_params = PARAMS[size]
-protocol = "paper_like_train_split_precomputed_mpl"
-```
-
-这样做的目的，是让默认复现实验可以快速检查完整 pipeline。如果希望重新拟合 MPL-like 参数，可以使用：
-
-```bash
-python scripts/run_reproduction.py --fit-mpl --mpl-maxiter 300
-```
-
-需要注意：当前 project scripts 中的 refit 使用的是 `src/experiment_utils.py` 的 SciPy L-BFGS-B wrapper，而不是原仓库 `fitting.py` 中的 PyTorch AdamW 训练流程。这是为了让 final project 实验在普通 NumPy/SciPy 环境中更稳定地复现。
-
-## 4. Tissue Annealing Law
-
-Tissue baseline 在 `src/annealing_law.py` 中实现。核心类是：
-
-```python
-class TissueAnnealingLaw:
-    def __init__(self, lambda_decay=0.995):
-        ...
-```
-
-它的预测公式是：
-
-```python
-l0 + a * s1 ** (-alpha) - c * s2
-```
-
-其中 `s1` 仍然是累计学习率：
-
-```python
-s1 = cumulative_lr(lrs)[steps]
-```
-
-`s2` 是学习率衰减记忆项：
-
-```python
-s2 = tissue_s2(lrs, self.lambda_decay)[steps]
-```
-
-`tissue_s2()` 在 `src/features.py` 中定义：
-
-```python
-def positive_decay(lrs):
-    decay = np.zeros_like(lrs, dtype=float)
-    decay[1:] = np.maximum(lrs[:-1] - lrs[1:], 0.0)
-    return decay
-
-def tissue_s2(lrs, lambda_decay):
-    decay = positive_decay(lrs)
-    momentum = np.zeros_like(lrs, dtype=float)
-    for i in range(1, len(lrs)):
-        momentum[i] = lambda_decay * momentum[i - 1] + decay[i]
-    return np.cumsum(momentum)
-```
-
-这段代码的含义是：
-
-1. 只把学习率下降视为 decay signal。
-2. 如果学习率上升或保持不变，`positive_decay` 为 0。
-3. `momentum[i] = lambda_decay * momentum[i - 1] + decay[i]` 表示 decay 影响会随时间保留一段记忆。
-4. `np.cumsum(momentum)` 表示把 decay memory 累积为一个持续影响 loss 的状态量。
-
-Tissue 的 `fit()` 使用 Huber loss：
-
-```python
-residual = np.log(loss) - np.log(pred)
-total += huber(0.001, residual).sum()
-```
-
-使用 log residual 的原因是，不同训练阶段 loss 数值尺度不同。直接在原始 loss 上拟合，后期小误差和前期大误差的权重会不均衡。log residual 更接近相对误差意义。
-
-`fit_best_tissue()` 会尝试三个 decay memory 参数：
-
-```python
-lambdas=(0.99, 0.995, 0.999)
-```
-
-然后选 Huber objective 最小的那个模型。
-
-## 5. Residual Correction
-
-Residual correction 的核心思想是：先让 base predictor 做主要预测，再学习它在训练曲线上的系统误差。
-
-如果 base predictor 的预测是：
+核心思想是把 loss 写成累计学习率幂律项加上学习率变化项：
 
 ```text
-y_base(t)
+loss_pred = l0 + a * S1(t)^(-alpha) + b * LD(t)
 ```
 
-真实 loss 是：
+其中 `S1(t)` 是累计学习率，`LD(t)` 用学习率变化和饱和幂律函数刻画 schedule decay 对 loss 的影响。主实验中 MPL-like 参数通过 `src/experiment_utils.py` 里的 SciPy L-BFGS-B wrapper 在 `cosine_24000.csv` 上重新拟合。
+
+### 4.2 Tissue Annealing Law
+
+Tissue baseline 位于 `src/annealing_law.py`。它使用更简单的 annealing memory：
 
 ```text
-y_true(t)
+l0 + a * S1(t)^(-alpha) - c * S2(t)
 ```
 
-那么训练残差为：
+其中 `S2(t)` 来自 `src/features.py` 里的 `tissue_s2()`：
+
+```python
+momentum[i] = lambda_decay * momentum[i - 1] + positive_decay[i]
+S2 = cumsum(momentum)
+```
+
+这表示学习率下降信号会被保留为一段 decay memory。Tissue 的优点是参数少、解释直接；当前主实验中它也是最稳定的 baseline 之一。
+
+## 5. Direction A：FSL-light residual correction
+
+Task 2 提升计划指出，原先的 full ridge correction 容易把一条 cosine train curve 上的 residual shape 学死，导致跨 schedule 外推失败。Direction A 的目标是把 residual correction 从“大而全的特征堆叠”改为更轻量、更有文献动机的 FSL-light。
+
+### 5.1 Full ridge 与 FSL-light 的区别
+
+full ridge 使用 `src/features.py` 中的 `correction_features()`，包含 10 个特征：
+
+```text
+bias, log_s1, eta_norm, s1_sq, decay_cum,
+decay_mem_099, decay_mem_0995, decay_mem_0999,
+t_norm, is_decay
+```
+
+FSL-light 使用 `fsl_light_features()`，只保留 5 个特征：
+
+```text
+bias, log_tau, eta_norm, decay_conv, is_decay
+```
+
+其中：
+
+| 特征 | 含义 |
+| --- | --- |
+| `bias` | 学习整体残差偏移 |
+| `log_tau` | 归一化累计学习率的对数坐标，表示 intrinsic optimization time |
+| `eta_norm` | 当前学习率相对峰值 |
+| `decay_conv` | 平滑后的学习率衰减记忆 |
+| `is_decay` | 是否已经进入 decay 相关状态 |
+
+残差修正由 `src/correction.py` 中的 `RidgeResidualCorrection` 完成。训练目标是：
 
 ```text
 r(t) = y_true(t) - y_base(t)
-```
-
-项目中用 ridge regression 学习：
-
-```text
 r(t) ~= X(t) w
-```
-
-最终预测为：
-
-```text
 y_pred(t) = y_base(t) + X(t) w
 ```
 
-实现位于 `src/correction.py`：
+其中 bias 项不做 L2 惩罚，其它特征受 ridge alpha 正则化。
 
-```python
-class RidgeResidualCorrection:
-    def fit(self, features, residual, feature_names):
-        xtx = features.T @ features
-        penalty = self.alpha * np.eye(xtx.shape[0])
-        penalty[0, 0] = 0.0
-        self.coef_ = np.linalg.solve(xtx + penalty, features.T @ residual)
-```
+### 5.2 主实验结果
 
-这对应 ridge closed-form solution：
-
-```text
-w = (X^T X + alpha I)^(-1) X^T r
-```
-
-但代码中有一个细节：
-
-```python
-penalty[0, 0] = 0.0
-```
-
-这表示 bias 项不做 L2 惩罚。这样模型可以自由学习整体偏移，但其它特征系数会被正则化，避免在只有一条 cosine train curve 时过拟合。
-
-需要特别说明：本项目保留 full ridge 结果，是为了把它作为过拟合诊断，而不是把失败结果视为代码错误。full ridge 在只有一条 cosine train curve 的主实验设定下拥有较丰富的特征空间，容易学到不能迁移到 WSD/WSDLD 的残差模式。FSL-light 则是更轻量的 residual correction 替代方案，它用更少的 schedule functional 降低自由度，让修正项更容易解释，也更适合 final project 的跨 schedule 对比。
-
-训练数据由：
-
-```python
-stack_residual_training_rows(data, train_curves, base_predictions, feature_fn)
-```
-
-统一堆叠。它对每条训练曲线计算：
-
-```python
-features, names = feature_fn(lrs, step)
-residual = loss - base_predictions[name]
-```
-
-然后把所有训练曲线的 `features` 和 `residual` 拼成一个大矩阵。
-
-## 6. Residual Correction 特征
-
-残差修正的特征由 `src/features.py` 中的 `correction_features()` 产生：
-
-```python
-full = np.column_stack([
-    np.ones(len(lrs)),
-    np.log(np.maximum(s1, 1e-12)),
-    eta_norm,
-    s1_sq,
-    decay_cum,
-    mem_099,
-    mem_0995,
-    mem_0999,
-    t_norm,
-    is_decay,
-])
-```
-
-特征名为：
-
-```python
-[
-    "bias",
-    "log_s1",
-    "eta_norm",
-    "s1_sq",
-    "decay_cum",
-    "decay_mem_099",
-    "decay_mem_0995",
-    "decay_mem_0999",
-    "t_norm",
-    "is_decay",
-]
-```
-
-各特征含义如下：
-
-| 特征 | 代码来源 | 作用 |
-| --- | --- | --- |
-| `bias` | `np.ones` | 学习整体残差偏移 |
-| `log_s1` | `log(cumulative_lr)` | 表示训练进度的 power-law 坐标 |
-| `eta_norm` | `lrs / max(lrs)` | 当前学习率相对峰值 |
-| `s1_sq` | `cumsum(lrs ** 2)` | 累计二阶学习率强度 |
-| `decay_cum` | `cumsum(positive_decay)` | 总学习率衰减量 |
-| `decay_mem_099` | `tissue_s2(lrs, 0.99)` | 短一些的 decay memory |
-| `decay_mem_0995` | `tissue_s2(lrs, 0.995)` | 中等 decay memory |
-| `decay_mem_0999` | `tissue_s2(lrs, 0.999)` | 长一些的 decay memory |
-| `t_norm` | `arange(n) / (n - 1)` | 归一化训练时间 |
-| `is_decay` | `decay_cum > 0` | 是否已经进入 decay 相关状态 |
-
-这些特征的设计意图是把 schedule shape 显式提供给 residual model。MPL 和 Tissue 已经各自包含一定的 schedule 信息，但在只用 cosine 拟合时，模型可能无法准确预测 WSD/WSDLD 在 decay 段的偏差。Residual correction 用这些特征补充学习率 level、累计训练量和 decay memory。
-
-FSL-light 使用 `src/features.py` 中的 `fsl_light_features()`。相比 full ridge，它只保留少量轻量 schedule functional，例如：
-
-| FSL-light 特征 | 含义 |
-| --- | --- |
-| `bias` | 学习整体残差偏移 |
-| `log_tau` | 归一化训练进度的对数坐标 |
-| `eta_norm` | 当前学习率相对峰值 |
-| `decay_conv` | 平滑后的学习率衰减信号 |
-| `is_decay` | 是否已经进入学习率衰减相关状态 |
-
-因此，FSL-light 不是要替代 base predictor 的主要物理形状，而是只对 WSD/WSDLD 中最关键的 schedule 状态做残差修正。
-
-## 7. 指标设计
-
-总体曲线指标由 `src/metrics.py` 中的 `curve_metrics()` 计算：
-
-```python
-error = pred - loss
-rel = abs(error) / max(abs(loss), 1e-12)
-```
-
-输出字段包括：
-
-| 指标 | 代码字段 | 含义 |
-| --- | --- | --- |
-| RMSE | `rmse` | 均方根误差，强调较大的点误差 |
-| MAE | `mae` | 平均绝对误差 |
-| PREDE | `prede` | 平均相对误差 |
-| WorstE | `worste` | 最大相对误差 |
-| R2 | `r2` | 决定系数，衡量整体拟合程度 |
-| Final Relative Error | `final_rel_error` | 最后一个 step 的相对误差 |
-| AUC Relative Error | `auc_rel_error` | 整条 loss curve 面积的相对误差 |
-
-其中 AUC 通过 `np.trapz` 或 `np.trapezoid` 计算：
-
-```python
-auc_loss = _trapz(loss)
-auc_pred = _trapz(pred)
-```
-
-阶段指标由 `stage_metrics()` 计算。它会遍历 `PHASES`，在每个阶段内计算：
-
-```python
-rmse
-mae
-prede
-mean_signed_error
-```
-
-`mean_signed_error` 特别有用，因为它保留误差方向：
-
-1. 正值表示预测 loss 偏高。
-2. 负值表示预测 loss 偏低。
-
-这能帮助分析模型是在 decay 阶段过于乐观，还是过于保守。
-
-## 8. 实验脚本说明
-
-### 8.1 `scripts/run_reproduction.py`
-
-用途：跑 paper-like split 的复现实验。
-
-主要流程：
-
-1. 遍历 `SIZES = ["25", "100", "400"]`。
-2. 加载每个 size 的所有曲线。
-3. 使用 `REPRODUCTION_TRAIN_CURVES` 拟合 Tissue。
-4. MPL 默认读取 `PARAMS[size]`，或者在 `--fit-mpl` 时调用 SciPy optimizer。
-5. 在 `ALL_EVAL_CURVES` 上评估 Tissue 和 MPL。
-6. 写出 `results/metrics/reproduction_metrics.csv`。
-
-输出行数：
-
-```text
-3 sizes * 2 methods * 6 eval curves = 36 rows
-```
-
-默认运行：
-
-```bash
-python scripts/run_reproduction.py
-```
-
-重新拟合 MPL-like 参数：
-
-```bash
-python scripts/run_reproduction.py --fit-mpl --mpl-maxiter 300
-```
-
-### 8.2 `scripts/run_cross_schedule.py`
-
-用途：主实验，只用 cosine schedule 训练，评估到 WSD/WSDLD 和辅助曲线。
-
-主要流程：
-
-1. 遍历三个 size。
-2. 用 `STRICT_COSINE_TRAIN_CURVES` 拟合 Tissue。
-3. 用 `fit_mpl_scipy()` 拟合 MPL-like 参数。
-4. 对 Tissue 和 MPL 分别训练 full ridge residual correction 和 FSL-light residual correction。
-5. 得到六种 method：
+`scripts/run_cross_schedule.py` 当前会输出六种方法：
 
 ```text
 tissue
@@ -488,228 +178,241 @@ mpl_plus_ridge
 mpl_plus_fsl_light
 ```
 
-6. 在 6 条评估曲线上输出总体指标。
-7. 在 4 个 phase 上输出阶段指标。
-8. 为每个预测结果写出逐 step prediction CSV。
+在 WSD/WSDLD 主测试曲线上的平均结果如下：
 
-输出：
+| 方法 | 平均 RMSE | 平均 final relative error | 平均 AUC relative error | 解释 |
+| --- | ---: | ---: | ---: | --- |
+| Tissue | 0.010101 | 0.004618 | 0.002255 | 最稳定的简单 baseline。 |
+| Tissue + full ridge | 0.023623 | 0.006110 | 0.006522 | RMSE 明显变差，说明 full ridge 过拟合。 |
+| Tissue + FSL-light | 0.022299 | 0.004571 | 0.006112 | final error 接近 Tissue，但整体 RMSE 仍变差。 |
+| MPL | 0.010571 | 0.010235 | 0.001878 | 强 baseline，AUC error 最低。 |
+| MPL + full ridge | 0.028372 | 0.007102 | 0.007580 | final error 有改善，但整条曲线明显变差。 |
+| MPL + FSL-light | 0.028353 | 0.010768 | 0.006129 | 比 full ridge 的 AUC error 略低，但 RMSE 仍高。 |
 
-```text
-results/metrics/cross_schedule_metrics.csv
-results/metrics/fsl_light_metrics.csv
-results/metrics/stage_metrics.csv
-results/predictions/*.csv
-```
+因此，Direction A 的当前结论是：FSL-light 更适合作为“有约束 residual correction 的检验”，而不是最终胜出的预测器。它支持了提升计划里的核心判断：在只有一条 cosine train curve 的条件下，residual correction 很容易学到不可迁移的形状；简单、可解释的 baseline 反而更可靠。
 
-行数：
+### 5.3 Ablation 结果
 
-```text
-cross_schedule_metrics.csv:
-3 sizes * 6 methods * 6 eval curves = 108 rows
-
-fsl_light_metrics.csv:
-3 sizes * 2 FSL-light methods * 6 eval curves = 36 rows
-
-stage_metrics.csv:
-3 sizes * 6 methods * 6 eval curves * 4 stages = 432 rows
-
-predictions:
-3 sizes * 6 methods * 6 eval curves = 108 CSV files
-```
-
-### 8.3 `scripts/run_ablation.py`
-
-用途：比较 residual correction 的不同特征组合。
-
-消融特征集定义在 `FEATURE_SETS`：
-
-```python
-FEATURE_SETS = {
-    "bias_only": ["bias"],
-    "lr_level": ["bias", "eta_norm", "t_norm"],
-    "cumulative": ["bias", "log_s1", "s1_sq", "t_norm"],
-    "decay_cum": ["bias", "log_s1", "eta_norm", "decay_cum", "t_norm"],
-    "decay_memory": [
-        "bias",
-        "log_s1",
-        "eta_norm",
-        "decay_mem_099",
-        "decay_mem_0995",
-        "decay_mem_0999",
-        "t_norm",
-    ],
-    "full": [
-        "bias",
-        "log_s1",
-        "eta_norm",
-        "s1_sq",
-        "decay_cum",
-        "decay_mem_099",
-        "decay_mem_0995",
-        "decay_mem_0999",
-        "t_norm",
-        "is_decay",
-    ],
-    "fsl_light": "fsl_light",
-}
-```
-
-它只在主要 WSD/WSDLD test curves 上评估：
-
-```python
-MAIN_TEST_CURVES = [
-    "wsd_20000_24000.csv",
-    "wsdld_20000_24000.csv",
-]
-```
-
-输出：
+`scripts/run_ablation.py` 比较了 residual feature sets：
 
 ```text
-results/metrics/ablation_metrics.csv
-results/metrics/alpha_sweep_metrics.csv
-results/metrics/correction_coefficients.csv
+bias_only, lr_level, cumulative, decay_cum,
+decay_memory, full, fsl_light
 ```
 
-行数：
+当前结果显示：
+
+1. 对 Tissue base，`lr_level` 的平均 RMSE 为 0.008984，略优于原始 Tissue 的 0.010101。
+2. `cumulative` 和 `decay_cum` 对 Tissue 也有轻微改善，平均 RMSE 约为 0.00988。
+3. 对 MPL base，`bias_only` 和 `cumulative` 更稳，复杂 decay 特征与 full/FSL-light 反而变差。
+4. 这说明 residual correction 的有效性高度依赖 base predictor 和特征自由度，不能简单认为“更多 schedule 特征一定更好”。
+
+这部分结果很适合放在 report 的 ablation/discussion 中：它给出了比单一 FSL-light 结果更细的解释。
+
+## 6. Direction B：稳健性和不确定性实验
+
+Direction B 的目标不是再提出一个新 predictor，而是让结论更可信：结果是否受 ridge alpha、MPL 初值、训练阶段划分影响？
+
+### 6.1 Ridge alpha sweep
+
+`scripts/run_ablation.py` 会同时输出 `results/metrics/alpha_sweep_metrics.csv`，对 FSL-light 使用：
 
 ```text
-ablation_metrics.csv:
-3 sizes * 2 base methods * 7 feature sets * 2 main curves = 84 rows
-
-alpha_sweep_metrics.csv:
-3 sizes * 2 base methods * 4 alpha values * 2 main curves = 48 rows
-
-correction_coefficients.csv:
-3 sizes * 2 base methods * 10 full features = 60 rows
+alpha = 1e-6, 1e-4, 1e-2, 1
 ```
 
-### 8.4 `scripts/make_figures.py`
+在 WSD/WSDLD 主测试曲线上的平均 RMSE：
 
-用途：把 metrics 和 predictions 转为可用于报告或答辩展示的图。
+| Base | alpha=1e-6 | alpha=1e-4 | alpha=1e-2 | alpha=1 |
+| --- | ---: | ---: | ---: | ---: |
+| Tissue + FSL-light | 0.023418 | 0.022299 | 0.022110 | 0.015387 |
+| MPL + FSL-light | 0.024346 | 0.028353 | 0.028671 | 0.017510 |
 
-主要输出：
+更强正则化能显著降低 FSL-light 的过拟合，但仍没有稳定超过 Tissue/MPL baseline。这个结果强化了一个重要结论：当前限制主要来自训练信息不足，而不仅是某个 alpha 没调好。
+
+### 6.2 MPL multi-start uncertainty
+
+`scripts/run_robustness.py` 使用 deterministic variants around `PARAMS[size]` 作为多个初值，重新拟合 MPL，并输出：
 
 ```text
-results/figures/lr_schedules_25.png
-results/figures/lr_schedules_100.png
-results/figures/lr_schedules_400.png
-results/figures/prediction_*_wsd_20000_24000.png
-results/figures/prediction_*_wsdld_20000_24000.png
-results/figures/residual_*_wsd_20000_24000.png
-results/figures/residual_*_wsdld_20000_24000.png
-results/figures/main_comparison_grid.png
-results/figures/final_error_bar.png
-results/figures/stage_error_bar.png
-results/figures/fsl_light_comparison.png
-results/figures/stage_fsl_light_error.png
-results/figures/ablation_bar.png
-results/figures/correction_coefficients.png
+results/metrics/mpl_multistart_metrics.csv
+results/metrics/mpl_multistart_summary.csv
 ```
 
-当前主要输出这些 PNG；如果 prediction/residual 逐曲线诊断图存在，则数量会随方法和曲线增加。
+按模型规模汇总后的 WSD/WSDLD RMSE mean/std：
 
-其中 `stage_error_bar.png` 使用：
+| Size | RMSE mean | RMSE std |
+| --- | ---: | ---: |
+| 25M | 0.009677 | 0.003145 |
+| 100M | 0.010779 | 0.003253 |
+| 400M | 0.014272 | 0.003979 |
 
-```python
-summarize_stage_errors(rows)
-```
+这说明 MPL 拟合存在一定初值敏感性，但量级仍接近主实验 baseline。报告中可以把它作为“非凸拟合不确定性”的证据，而不是把某一次 MPL refit 当作唯一结论。
 
-按以下维度汇总：
+### 6.3 Stage sensitivity
+
+`scripts/run_robustness.py` 还会读取 `stage_metrics.csv`，输出：
 
 ```text
-3 sizes * 3 methods * 2 stages = 18 bars
+results/metrics/stage_sensitivity_metrics.csv
 ```
 
-这里的 3 methods 是：
+关键字段包括：
 
 ```text
-tissue
-mpl
-mpl_plus_ridge
+stable_rmse
+decay_rmse
+decay_minus_stable_rmse
+decay_to_stable_rmse_ratio
 ```
 
-2 stages 是：
+主测试曲线上的平均结果显示：
+
+1. MPL 的 decay RMSE 明显高于 stable RMSE，平均 ratio 约为 5.70。
+2. Tissue 的 decay/stable ratio 约为 1.44，更均衡。
+3. full ridge 和 FSL-light 往往会把误差从 decay 段转移到 stable 段，导致整体 RMSE 不一定下降。
+
+这解释了为什么只看 final error 容易误判。某些 residual correction 会改善最后一点，却牺牲整条曲线或稳定阶段的误差。
+
+## 7. Direction C：NCPL-style neural surrogate
+
+Direction C 参考 NCPL-style 思路，尝试训练一个直接从配置和 schedule functional 预测 log loss 的神经 surrogate。它位于：
 
 ```text
-post_warmup_stable
-decay
+src/surrogate.py
+scripts/run_ncpl_surrogate.py
 ```
 
-图中每个 bar 是对 WSD 和 WSDLD 两条主测试曲线的 RMSE 平均值。该旧图保留原始对照范围，避免和 FSL-light 图完全重复。
-新增的 `fsl_light_comparison.png` 直接比较 baseline、full ridge 和 FSL-light 六个方法在 WSD/WSDLD 上的总体 RMSE；`stage_fsl_light_error.png` 比较这六个方法在 stable/decay 阶段的 stage RMSE，用于判断 FSL-light 是否主要改善学习率衰减阶段。
-
-## 9. 结果文件结构
-
-完整运行后，结果目录如下：
+特征包括：
 
 ```text
-results/
-├── metrics/
-│   ├── reproduction_metrics.csv
-│   ├── cross_schedule_metrics.csv
-│   ├── stage_metrics.csv
-│   ├── fsl_light_metrics.csv
-│   ├── alpha_sweep_metrics.csv
-│   ├── ablation_metrics.csv
-│   └── correction_coefficients.csv
-├── predictions/
-│   └── cross_schedule_cosine_train_{size}_{method}_{curve}.csv
-└── figures/
-    ├── lr_schedules_*.png
-    ├── prediction_*.png
-    ├── residual_*.png
-    ├── main_comparison_grid.png
-    ├── final_error_bar.png
-    ├── stage_error_bar.png
-    ├── fsl_light_comparison.png
-    ├── stage_fsl_light_error.png
-    ├── ablation_bar.png
-    └── correction_coefficients.png
+log_model_size, step_norm, log_step,
+log_tau, eta_norm, decay_conv, is_decay
 ```
 
-`predictions` 中每个 CSV 包含：
+模型是带 `StandardScaler` 的 `MLPRegressor`，训练目标是 log loss：
+
+```text
+features -> log(loss)
+prediction = exp(model(features))
+```
+
+当前输出：
+
+```text
+results/metrics/ncpl_surrogate_metrics.csv
+results/metrics/ncpl_surrogate_stage_metrics.csv
+results/predictions/ncpl_surrogate_cosine_train_<size>_ncpl_surrogate_<curve>.csv
+results/figures/ncpl_surrogate_comparison.png
+```
+
+在 WSD/WSDLD 主测试曲线上的平均表现：
+
+| 方法 | 平均 RMSE | 平均 final relative error | 平均 AUC relative error |
+| --- | ---: | ---: | ---: |
+| NCPL-style surrogate | 1.460152 | 0.044363 | 0.427431 |
+
+这个结果远差于 Tissue/MPL baseline。它不是失败的代码，而是有用的 negative evidence：当前课程数据只有少量 schedule 和三个模型规模，不足以支撑端到端神经 surrogate。报告中建议把 Direction C 放在 future work 或 limitations 中，说明如果有更大规模训练日志，NCPL-style 方法可能更有意义。
+
+## 8. 指标文件与行数
+
+完整运行后，`results/metrics/` 中包含：
+
+| 文件 | 行数 | 含义 |
+| --- | ---: | --- |
+| `reproduction_metrics.csv` | 36 | paper-like split 下 Tissue/MPL 复现结果。 |
+| `cross_schedule_metrics.csv` | 108 | strict cosine train 下六种方法的跨 schedule 总体指标。 |
+| `fsl_light_metrics.csv` | 36 | 从主实验中过滤出的 FSL-light rows。 |
+| `stage_metrics.csv` | 432 | 六种方法在四个阶段上的 stage-wise metrics。 |
+| `ablation_metrics.csv` | 84 | residual feature set 消融。 |
+| `alpha_sweep_metrics.csv` | 48 | FSL-light ridge alpha 敏感性。 |
+| `mpl_multistart_metrics.csv` | 30 | MPL 多初值逐曲线结果。 |
+| `mpl_multistart_summary.csv` | 6 | MPL 多初值 mean/std/min/max 汇总。 |
+| `stage_sensitivity_metrics.csv` | 36 | stable 与 decay 阶段差异。 |
+| `ncpl_surrogate_metrics.csv` | 18 | Direction C 总体指标。 |
+| `ncpl_surrogate_stage_metrics.csv` | 72 | Direction C stage-wise metrics。 |
+| `correction_coefficients.csv` | 60 | full ridge 特征系数。 |
+
+总体指标来自 `src/metrics.py`：
+
+| 指标 | 含义 |
+| --- | --- |
+| `rmse` | 均方根误差，强调较大的点误差 |
+| `mae` | 平均绝对误差 |
+| `prede` | 平均相对误差 |
+| `worste` | 最大相对误差 |
+| `r2` | 决定系数 |
+| `final_rel_error` | 最后一个 step 的相对误差 |
+| `auc_rel_error` | 整条 loss curve 面积的相对误差 |
+
+`results/predictions/` 中的逐 step CSV 包含：
 
 ```text
 step, loss, pred, residual, method, size, curve
 ```
 
-其中：
+注意：prediction CSV 里的 `residual = loss - pred`，而 `curve_metrics()` 内部的 error 是 `pred - loss`。两者符号相反，这是为了让图中 residual 更直观地表示“真实 loss 还比预测高多少”。
+
+## 9. 图表输出
+
+`scripts/make_figures.py` 生成的主要图表包括：
 
 ```text
-residual = loss - pred
+results/figures/lr_schedules_*.png
+results/figures/prediction_*.png
+results/figures/residual_*.png
+results/figures/main_comparison_grid.png
+results/figures/final_error_bar.png
+results/figures/stage_error_bar.png
+results/figures/fsl_light_comparison.png
+results/figures/stage_fsl_light_error.png
+results/figures/alpha_sweep_sensitivity.png
+results/figures/mpl_multistart_uncertainty.png
+results/figures/stage_sensitivity.png
+results/figures/ncpl_surrogate_comparison.png
+results/figures/ablation_bar.png
+results/figures/correction_coefficients.png
 ```
 
-这个方向和 `curve_metrics()` 里的 `error = pred - loss` 不同。这样做是为了图像诊断时更直观地表达“真实值还比预测值高多少”。文档和图表中需要注意这两个符号约定。
+推荐报告中重点使用：
 
-## 10. 测试说明
+1. `main_comparison_grid.png`：展示 baseline 与 full ridge 的主对比。
+2. `fsl_light_comparison.png`：展示 baseline、full ridge、FSL-light 的完整对比。
+3. `stage_fsl_light_error.png`：解释 residual correction 为什么可能牺牲 stable 阶段。
+4. `alpha_sweep_sensitivity.png`：展示 alpha 增大后过拟合缓解但仍未超过 baseline。
+5. `ncpl_surrogate_comparison.png`：作为 Direction C 的 high-risk baseline evidence。
 
-测试位于 `tests/`：
+## 10. 测试覆盖
+
+测试位于 `tests/`，覆盖：
 
 ```text
 test_features.py
 test_metrics.py
 test_correction.py
+test_cross_schedule.py
+test_ablation.py
+test_robustness.py
+test_surrogate.py
+test_ncpl_surrogate.py
 test_figures.py
+test_experiment_utils.py
 test_data_loader.py
 test_lrs.py
 ```
 
-覆盖内容：
+主要验证内容：
 
-1. `test_features.py` 检查 cumulative LR、decay signal、phase mask 边界。
-2. `test_metrics.py` 检查 MPL 预测、曲线指标、阶段指标。
-3. `test_correction.py` 检查 Tissue 拟合、ridge residual correction、训练样本堆叠。
-4. `test_figures.py` 检查 stage error 图的汇总逻辑覆盖全部 size。
-5. `test_data_loader.py` 和 `test_lrs.py` 保留原仓库基础功能测试，并使用 pytest 临时目录保存图像，避免污染项目根目录。
+1. learning-rate feature 和 phase mask 的边界行为。
+2. Tissue/MPL/correction 的基本数值性质。
+3. cross-schedule、ablation、robustness、NCPL script 的输出字段和行组织。
+4. figure helper 的聚合逻辑与保存路径。
 
 运行：
 
 ```bash
 python -m pytest tests -q
 ```
-
-该命令应全部通过；具体测试数量以当前命令输出为准。
 
 ## 11. 推荐复现流程
 
@@ -721,61 +424,73 @@ python -m pytest tests -q
 python scripts/run_reproduction.py
 python scripts/run_cross_schedule.py
 python scripts/run_ablation.py
+python scripts/run_robustness.py
+python scripts/run_ncpl_surrogate.py
 python scripts/make_figures.py
 ```
 
-如果要更严格地重新拟合 reproduction 中的 MPL-like 参数：
+如果只想复现最核心结果，可以运行：
 
 ```bash
-python scripts/run_reproduction.py --fit-mpl --mpl-maxiter 300
+python scripts/run_cross_schedule.py
+python scripts/run_ablation.py
+python scripts/run_robustness.py
+python scripts/make_figures.py
 ```
 
-如果运行时间可接受，可以继续增大：
-
-```bash
-python scripts/run_reproduction.py --fit-mpl --mpl-maxiter 1000
-```
-
-主实验和消融实验默认会调用 SciPy optimizer，因此耗时比只读预计算参数更长。实际运行时，`run_cross_schedule.py` 和 `run_ablation.py` 可能各需要一两分钟，取决于机器性能。
+其中 `run_robustness.py` 依赖 `stage_metrics.csv`，所以需要先运行 `run_cross_schedule.py`。
 
 ## 12. 如何阅读代码
 
-建议按下面顺序阅读：
+建议阅读顺序：
 
-1. `src/splits.py`：先理解数据集、训练曲线、测试曲线和阶段划分。
-2. `src/features.py`：理解累计学习率、正向衰减、decay memory 和 residual correction 特征。
-3. `src/predictors.py`：理解 MPL 预测公式如何从学习率序列得到 loss prediction。
-4. `src/annealing_law.py`：理解 Tissue baseline 如何拟合和预测。
-5. `src/correction.py`：理解 ridge residual correction 如何训练。
-6. `src/metrics.py`：理解所有评价指标。
-7. `src/experiment_utils.py`：理解数据加载、MPL-like fitting、CSV 写出等公共工具。
-8. `scripts/run_cross_schedule.py`：理解主实验完整流程。
-9. `scripts/run_ablation.py`：理解特征消融。
-10. `scripts/make_figures.py`：理解指标如何转成报告图。
+1. `src/splits.py`：理解训练曲线、测试曲线和阶段划分。
+2. `src/features.py`：理解 cumulative LR、decay signal、full ridge features 和 FSL-light features。
+3. `src/annealing_law.py`：理解 Tissue baseline。
+4. `src/predictors.py`：理解 MPL curve prediction。
+5. `src/correction.py`：理解 ridge residual correction。
+6. `src/experiment_utils.py`：理解拟合、CSV 写出、多初值和汇总 helper。
+7. `scripts/run_cross_schedule.py`：理解主实验。
+8. `scripts/run_ablation.py`：理解 feature ablation 和 alpha sweep。
+9. `scripts/run_robustness.py`：理解 Direction B。
+10. `src/surrogate.py` 与 `scripts/run_ncpl_surrogate.py`：理解 Direction C。
+11. `scripts/make_figures.py`：理解结果如何转成图表。
 
-这个阅读顺序从实验设定到模型，再到评估和图表，和 final report 的叙述顺序基本一致。
+这个顺序和 report 的叙事顺序基本一致。
 
-## 13. 报告写作建议
+## 13. 报告与答辩建议
 
-如果要把本项目写成 final report，可以采用下面结构：
+推荐报告结构：
 
-1. Introduction：说明学习率调度改变会影响 loss curve，跨 schedule 预测有实践意义。
-2. Data and Setup：说明三种 model size、训练曲线、测试曲线、阶段划分。
-3. Methods：介绍 MPL、Tissue Annealing Law、Ridge residual correction。
-4. Metrics：介绍 RMSE、PREDE、final relative error、stage-wise error。
-5. Results：引用 `cross_schedule_metrics.csv`、`stage_metrics.csv` 和主要图表。
-6. Ablation：引用 `ablation_metrics.csv` 和 `correction_coefficients.csv`。
-7. Discussion：讨论 decay memory 特征是否改善 WSD/WSDLD 外推，说明 full ridge 失败是过拟合诊断，FSL-light 是轻量、可解释的 residual correction，并指出默认 MPL reproduction 与 fresh refit 的区别。
-8. Limitations：说明本项目不重新训练 LLM，只使用已有 loss curves；训练集规模较小，ridge correction 可能依赖当前数据分布。
+1. Introduction：说明学习率调度改变会影响 loss curve，跨 schedule 预测有实际意义。
+2. Related Work / Reference Review：对应 Task 2 参考文献，解释 Tissue、MPL、FSL、NCPL-style surrogate 的启发。
+3. Data and Setup：说明三个 model size、strict cosine train、WSD/WSDLD test 和 phase split。
+4. Baselines：介绍 MPL 与 Tissue。
+5. Direction A：介绍 full ridge 失败、FSL-light 设计和 ablation。
+6. Direction B：介绍 alpha sweep、multi-start uncertainty、stage sensitivity。
+7. Direction C：介绍 NCPL-style surrogate，并明确它是 high-risk/future-work baseline。
+8. Discussion：强调 baseline 很强、residual correction 信息不足、复杂模型不适合小数据。
+9. Limitations：说明不重新训练 LLM、schedule 数量少、MPL refit 与原仓库 AdamW 实现不同。
+
+答辩时可以用下面的顺序讲：
+
+1. cosine、WSD、WSDLD 都是现实 LLM 训练中重要的 schedule。
+2. 我们先复现 Tissue 和 MPL，并建立严格 cosine-to-WSD/WSDLD 外推设置。
+3. full ridge 尝试修正 residual，但它在整体 RMSE 上明显变差，说明只用一条 cosine train curve 容易过拟合。
+4. FSL-light 把 correction 限制到少量 intrinsic-time 和 decay functional，结果显示更克制但仍没有稳定超过 baseline。
+5. Direction B 的 alpha sweep 和 stage sensitivity 解释了原因：强正则能缓解过拟合，但 residual correction 可能把误差从 decay 段转移到 stable 段。
+6. Direction C 的 NCPL-style surrogate 误差很大，说明当前数据规模不适合端到端神经 surrogate。
+7. 最终贡献是一个诚实、可复现的跨 schedule evaluation pipeline，以及关于 residual correction 在小数据设置下何时失效的系统诊断。
 
 ## 14. 已知限制
 
-1. 本项目不训练新的 LLM，只对已有 loss curves 进行曲线拟合和外推评估。
-2. 默认 `run_reproduction.py` 使用 `src.config.PARAMS` 中的预计算 MPL 参数，不是 fresh MPL training。
-3. `--fit-mpl` 使用 SciPy L-BFGS-B 拟合 MPL-like 参数，与原仓库 PyTorch AdamW 实现不是完全同一个优化过程。
-4. 主实验只用一条 cosine curve 训练 residual correction，因此 ridge regularization 很重要；full ridge 的失败应作为过拟合诊断理解。
-5. 当前图表偏向报告展示，不是交互式分析工具。如果要做深入分析，可以直接读取 `results/metrics/*.csv`。
+1. 本项目不训练新的 LLM，只对已有 loss curves 做拟合和外推评估。
+2. 主实验只用一条 `cosine_24000.csv` 训练 residual correction，训练信息非常有限。
+3. `run_cross_schedule.py` 中的 MPL-like fitting 使用 SciPy L-BFGS-B wrapper，不完全等同于原仓库 PyTorch AdamW 训练流程。
+4. full ridge 和 FSL-light 的失败不应被解释为实现 bug，而应被解释为 cosine-only residual learning 的泛化风险。
+5. NCPL-style surrogate 当前数据量不足，结果只能作为 future work 的动机，不适合作为最终方法。
+6. 当前图表面向报告展示，不是交互式分析工具；深入分析应直接读取 `results/metrics/*.csv`。
 
 ## 15. 一句话总结
 
-本 final project 把原仓库的 Multi-Power Law loss prediction 扩展成一个完整的跨学习率调度评估 pipeline：用 cosine schedule 训练 predictor，测试到 WSD/WSDLD schedule，通过 Tissue decay memory、full ridge 过拟合诊断和 FSL-light 轻量残差修正分析学习率衰减阶段的系统误差，并输出可复现的指标表、逐步预测表和报告图表。
+本 final project 把原 Multi-Power Law 仓库扩展为一个完整的跨学习率调度损失曲线预测评估平台：它复现 Tissue/MPL baseline，实现 FSL-light residual correction、稳健性/不确定性实验和 NCPL-style surrogate，并用当前结果说明，在课程数据规模下，简单可解释 baseline 比复杂 residual 或神经 surrogate 更可靠，而 residual correction 的主要价值是揭示跨 schedule 外推中的过拟合与阶段性误差结构。
