@@ -8,29 +8,35 @@
     :root {
       color-scheme: light;
       --ink: #142033;
-      --muted: #617083;
-      --line: #d8e0ea;
+      --muted: #5d6d80;
+      --line: #d8e1ea;
       --paper: #ffffff;
       --wash: #f5f8fb;
       --blue: #245f9f;
       --teal: #14706f;
-      --gold: #a46716;
-      --red: #9f3d3d;
+      --gold: #9c6716;
+      --red: #9d3c3c;
       --green: #2f6b45;
-      --shadow: 0 18px 52px rgba(20, 32, 51, 0.12);
+      --shadow: 0 18px 48px rgba(20, 32, 51, 0.12);
     }
 
     * {
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
-      overflow: hidden;
+      width: 100%;
+      min-height: 100%;
       background: #e9eef4;
       color: var(--ink);
       font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
       letter-spacing: 0;
+    }
+
+    body {
+      overflow: hidden;
     }
 
     .deck {
@@ -43,7 +49,7 @@
       position: absolute;
       inset: 0;
       display: none;
-      padding: clamp(28px, 4vw, 56px);
+      padding: clamp(28px, 4.2vw, 58px);
       background: var(--paper);
     }
 
@@ -52,18 +58,18 @@
     }
 
     .slide-inner {
-      width: min(1180px, 100%);
-      height: min(680px, calc(100vh - 112px));
+      width: min(1220px, 100%);
+      height: min(700px, calc(100vh - 114px));
       margin: auto;
       display: grid;
-      gap: 24px;
+      gap: 22px;
       align-content: center;
     }
 
     .title-slide {
       background:
-        linear-gradient(90deg, rgba(20, 32, 51, 0.86), rgba(20, 32, 51, 0.55)),
-        url("results/figures/main_comparison_grid.png") center / cover no-repeat;
+        linear-gradient(90deg, rgba(20, 32, 51, 0.9), rgba(20, 32, 51, 0.58)),
+        url("results/figures/fsl_light_comparison.png") center / cover no-repeat;
       color: #ffffff;
     }
 
@@ -72,11 +78,37 @@
       padding-bottom: 34px;
     }
 
-    .eyebrow {
+    p,
+    h1,
+    h2,
+    h3 {
       margin: 0;
-      color: var(--blue);
-      font-size: 15px;
+    }
+
+    h1 {
+      max-width: 1040px;
+      font-size: clamp(38px, 5.8vw, 74px);
+      line-height: 1.05;
+      font-weight: 850;
+    }
+
+    h2 {
+      font-size: clamp(28px, 4.1vw, 50px);
+      line-height: 1.13;
+      font-weight: 820;
+    }
+
+    h3 {
+      font-size: 21px;
+      line-height: 1.24;
       font-weight: 800;
+    }
+
+    .eyebrow {
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 850;
+      letter-spacing: 0;
       text-transform: uppercase;
     }
 
@@ -84,45 +116,28 @@
       color: #91d6d2;
     }
 
-    h1,
-    h2,
-    h3,
-    p {
-      margin: 0;
-    }
-
-    h1 {
-      max-width: 980px;
-      font-size: clamp(38px, 6vw, 76px);
-      line-height: 1.04;
-      font-weight: 850;
-    }
-
-    h2 {
-      font-size: clamp(30px, 4.4vw, 52px);
-      line-height: 1.12;
-      font-weight: 820;
-    }
-
-    h3 {
-      font-size: 22px;
-      line-height: 1.2;
-    }
-
     .subtitle {
-      max-width: 900px;
+      max-width: 980px;
       color: var(--muted);
-      font-size: clamp(17px, 2vw, 22px);
+      font-size: clamp(17px, 1.9vw, 22px);
       line-height: 1.62;
     }
 
     .title-slide .subtitle {
-      color: #edf5f7;
+      color: #eef6f7;
+    }
+
+    .lead {
+      max-width: 1040px;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.68;
     }
 
     .grid {
       display: grid;
-      gap: 18px;
+      gap: 16px;
+      min-width: 0;
     }
 
     .cols-2 {
@@ -134,12 +149,16 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
+    .cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
     .card {
       min-width: 0;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--wash);
-      padding: 18px 20px;
+      padding: 17px 19px;
     }
 
     .card.white {
@@ -151,13 +170,14 @@
       display: block;
       margin-bottom: 7px;
       color: var(--ink);
-      font-size: 18px;
+      font-size: 17px;
+      line-height: 1.3;
     }
 
     .card p,
     .card li {
       color: var(--muted);
-      font-size: 16px;
+      font-size: 15.5px;
       line-height: 1.58;
     }
 
@@ -181,58 +201,26 @@
       border-left-color: var(--green);
     }
 
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 12px;
+    ul,
+    ol {
+      margin: 0;
+      padding-left: 20px;
     }
 
-    .step {
-      position: relative;
-      min-height: 132px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #ffffff;
-      padding: 16px;
-    }
-
-    .step b {
-      display: block;
-      margin-bottom: 8px;
-      color: var(--blue);
-      font-size: 14px;
-    }
-
-    .step span {
+    li {
+      margin: 7px 0;
       color: var(--muted);
-      font-size: 15px;
-      line-height: 1.5;
+      font-size: 16px;
+      line-height: 1.58;
     }
 
-    .metric-row {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .metric {
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      background: #ffffff;
-      padding: 15px 16px;
-    }
-
-    .metric small {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .metric b {
-      display: block;
-      margin-top: 4px;
-      color: var(--ink);
-      font-size: 25px;
+    code {
+      padding: 2px 5px;
+      border: 1px solid #d8e1ea;
+      border-radius: 4px;
+      background: #f3f6fa;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92em;
     }
 
     table {
@@ -241,32 +229,33 @@
       overflow: hidden;
       border-radius: 8px;
       background: #ffffff;
-      font-size: 15px;
       box-shadow: var(--shadow);
+      font-size: 14.5px;
     }
 
     th,
     td {
-      padding: 11px 12px;
+      padding: 10px 11px;
       border-bottom: 1px solid var(--line);
       text-align: left;
       vertical-align: top;
+      line-height: 1.45;
     }
 
     th {
       background: #eaf1f7;
       color: #27374f;
-      font-weight: 800;
+      font-weight: 850;
     }
 
     tr:last-child td {
       border-bottom: 0;
     }
 
-    td.num,
-    th.num {
+    .num {
       text-align: right;
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
 
     .figure {
@@ -286,29 +275,46 @@
     }
 
     .figure.tall img {
-      max-height: 500px;
+      max-height: 510px;
     }
 
-    ul {
-      margin: 0;
-      padding-left: 20px;
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
     }
 
-    li {
-      margin: 9px 0;
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 14px 15px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric small {
+      display: block;
       color: var(--muted);
-      font-size: 17px;
-      line-height: 1.55;
+      font-size: 12.5px;
+      line-height: 1.35;
+    }
+
+    .metric b {
+      display: block;
+      margin-top: 4px;
+      color: var(--ink);
+      font-size: 24px;
+      font-variant-numeric: tabular-nums;
     }
 
     .callout {
       border-left: 6px solid var(--gold);
       border-radius: 8px;
       background: #fff8e8;
-      padding: 18px 20px;
+      padding: 16px 18px;
       color: #4d3b16;
-      font-size: 18px;
-      line-height: 1.58;
+      font-size: 17px;
+      line-height: 1.62;
     }
 
     .callout.good {
@@ -323,10 +329,38 @@
       color: #5a3030;
     }
 
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 11px;
+    }
+
+    .step {
+      min-height: 140px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 15px;
+    }
+
+    .step b {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--blue);
+      font-size: 13px;
+    }
+
+    .step span {
+      display: block;
+      color: var(--muted);
+      font-size: 14.5px;
+      line-height: 1.5;
+    }
+
     .pill-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 9px;
     }
 
     .pill {
@@ -335,17 +369,20 @@
       background: #ffffff;
       padding: 8px 12px;
       color: #27374f;
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 13.5px;
+      font-weight: 800;
     }
 
-    code {
-      padding: 2px 5px;
-      border: 1px solid #d8e0ea;
-      border-radius: 4px;
-      background: #f3f6fa;
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 0.92em;
+    .formula {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 16px 18px;
+      color: #27374f;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 21px;
+      line-height: 1.5;
+      box-shadow: var(--shadow);
     }
 
     .controls {
@@ -358,7 +395,7 @@
       gap: 12px;
       transform: translateX(-50%);
       padding: 8px 10px;
-      border: 1px solid rgba(216, 224, 234, 0.9);
+      border: 1px solid rgba(216, 225, 234, 0.9);
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.88);
       box-shadow: 0 10px 30px rgba(20, 32, 51, 0.16);
@@ -383,12 +420,12 @@
     }
 
     .counter {
-      min-width: 64px;
+      min-width: 66px;
       text-align: center;
       color: #314156;
       font-size: 14px;
       font-variant-numeric: tabular-nums;
-      font-weight: 800;
+      font-weight: 850;
     }
 
     .progress {
@@ -409,14 +446,14 @@
       transition: width 160ms ease;
     }
 
-    @media (max-width: 920px) {
+    @media (max-width: 980px) {
       body {
         overflow: auto;
       }
 
       .deck {
-        min-height: 100vh;
         height: auto;
+        min-height: 100vh;
       }
 
       .slide,
@@ -431,12 +468,14 @@
 
       .cols-2,
       .cols-3,
+      .cols-4,
       .steps,
       .metric-row {
         grid-template-columns: 1fr;
       }
 
-      .figure img {
+      .figure img,
+      .figure.tall img {
         max-height: none;
       }
     }
@@ -448,60 +487,78 @@
   <main class="deck" id="deck">
     <section class="slide title-slide active">
       <div class="slide-inner">
-        <p class="eyebrow">Final Project Presentation</p>
+        <p class="eyebrow">Final Project Defense Slides</p>
         <h1>跨学习率调度的 LLM 预训练损失曲线预测</h1>
-        <p class="subtitle">基于 Multi-Power Law 仓库，复现 Tissue/MPL，并系统检验 residual correction、稳健性实验与 NCPL-style surrogate。</p>
+        <p class="subtitle">Predicting LLM Pretraining Loss Curves across Learning-Rate Schedules：从 Multi-Power Law 复现出发，系统检验 cosine-to-WSD/WSDLD 外推、残差修正、稳健性与神经 surrogate 的可行性。</p>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Project Abstract</p>
+        <h2>项目摘要</h2>
+        <p class="lead">本项目关注一个实际训练问题：当我们已经观察到某些 learning-rate schedule 下的预训练损失曲线时，能否预测另一种 schedule 下整条 loss curve 的变化？项目不重新训练 LLM，而是使用课程提供的 25M、100M、400M loss curves，复现并扩展 Multi-Power Law loss prediction，在严格的 cosine-to-WSD/WSDLD 设置下进行系统评估。</p>
+        <div class="grid cols-3">
+          <article class="card accent blue"><strong>复现基础</strong><p>实现 Tissue Annealing Law 与 MPL baseline，并输出 reproduction、cross-schedule 和 stage-wise metrics。</p></article>
+          <article class="card accent"><strong>方法扩展</strong><p>比较 full ridge residual correction 与 FSL-light schedule functional，分析残差修正是否具备跨 schedule 泛化能力。</p></article>
+          <article class="card accent gold"><strong>结论边界</strong><p>结果表明 baseline 已经很强，复杂 residual 与神经 surrogate 在小数据设置下更容易过拟合。</p></article>
+        </div>
       </div>
     </section>
 
     <section class="slide">
       <div class="slide-inner">
         <p class="eyebrow">1. 问题背景与目标</p>
-        <h2>我们想预测的不是一个点，而是一整条训练损失曲线</h2>
-        <div class="grid cols-3">
-          <article class="card accent blue">
-            <strong>研究内容</strong>
-            <p>给定已有 LLM 预训练 loss curves，拟合能够从学习率序列预测 loss trajectory 的模型。</p>
-          </article>
-          <article class="card accent">
-            <strong>核心动机</strong>
-            <p>真实训练中常需要改变 schedule，例如从 cosine 切到 WSD/WSDLD；重新训练大模型成本很高。</p>
-          </article>
-          <article class="card accent gold">
-            <strong>项目边界</strong>
-            <p>不重新训练 LLM，只在课程提供的曲线上做可复现的拟合、外推、诊断与比较。</p>
-          </article>
+        <h2>为什么要预测跨 schedule 的损失曲线？</h2>
+        <div class="grid cols-2">
+          <div class="card white">
+            <h3>背景</h3>
+            <ul>
+              <li>LLM 预训练成本高，完整训练一次模型需要大量计算资源。</li>
+              <li>学习率调度会影响 loss 下降速度、decay 阶段行为和最终 loss。</li>
+              <li>实际训练中常需要在 cosine、constant、WSD、WSDLD 等 schedule 之间比较策略。</li>
+            </ul>
+          </div>
+          <div class="card white">
+            <h3>目标</h3>
+            <ul>
+              <li>用已有曲线拟合 predictor，预测新 schedule 下完整 loss trajectory。</li>
+              <li>比较 MPL、Tissue、residual correction 和 neural surrogate 的外推能力。</li>
+              <li>识别 WSD/WSDLD decay 阶段中最容易出现系统误差的位置。</li>
+            </ul>
+          </div>
         </div>
-        <div class="callout good">目标：在严格 cosine-to-WSD/WSDLD 设置下，回答现有 scaling-law 方法能否可靠外推，以及 residual correction 是否真的带来改进。</div>
+        <div class="callout good">本项目的核心不是追求“某个新方法必然最好”，而是建立一条可复现的跨 schedule 评估 pipeline，并诚实分析不同方法在小数据设置下的可靠性。</div>
       </div>
     </section>
 
     <section class="slide">
       <div class="slide-inner">
-        <p class="eyebrow">Core Questions</p>
-        <h2>五个核心问题</h2>
+        <p class="eyebrow">Research Questions</p>
+        <h2>希望回答的核心问题</h2>
         <div class="grid cols-2">
           <div class="card white">
-            <ul>
-              <li>MPL 能否从 cosine schedule 外推到 WSD/WSDLD schedule？</li>
-              <li>Tissue 的 decay memory 是否能解释学习率衰减阶段的误差结构？</li>
-              <li>在 base predictor 后面加入 residual correction 是否有帮助？</li>
-            </ul>
+            <ol>
+              <li>MPL 是否能从 cosine schedule 外推到 WSD/WSDLD schedule？</li>
+              <li>Tissue 的 decay memory 是否能更稳定地解释学习率衰减阶段？</li>
+              <li>在 base predictor 之后学习 residual correction 是否真正改善跨 schedule 预测？</li>
+            </ol>
           </div>
           <div class="card white">
-            <ul>
-              <li>full ridge 的失败是 bug，还是 cosine-only residual learning 的过拟合诊断？</li>
-              <li>NCPL-style neural surrogate 在小规模课程数据上是否值得作为主方法？</li>
-            </ul>
+            <ol start="4">
+              <li>full ridge 的失败是实现问题，还是 cosine-only residual learning 的过拟合诊断？</li>
+              <li>NCPL-style neural surrogate 在当前课程数据规模下是否适合作为主方法？</li>
+              <li>哪些指标最能解释模型在 stable 和 decay 阶段的不同表现？</li>
+            </ol>
           </div>
         </div>
         <div class="pill-list">
-          <span class="pill">Tissue Annealing Law</span>
-          <span class="pill">Multi-Power Law</span>
+          <span class="pill">Cross-Schedule Prediction</span>
+          <span class="pill">WSD / WSDLD</span>
+          <span class="pill">MPL</span>
+          <span class="pill">Tissue</span>
           <span class="pill">FSL-light</span>
-          <span class="pill">Alpha Sweep</span>
-          <span class="pill">Stage-wise Metrics</span>
-          <span class="pill">NCPL-style Surrogate</span>
+          <span class="pill">Stage-wise Error</span>
         </div>
       </div>
     </section>
@@ -509,78 +566,232 @@
     <section class="slide">
       <div class="slide-inner">
         <p class="eyebrow">2. 数据处理与实验设置</p>
-        <h2>三个模型规模，严格 cosine 训练，跨 schedule 测试</h2>
+        <h2>数据来源与曲线类型</h2>
         <div class="grid cols-2">
           <div class="card white">
             <h3>数据来源</h3>
+            <p>课程提供的 loss curve CSV 被组织为三个模型规模目录：</p>
             <ul>
               <li><code>loss_curve_repo/csv_25</code></li>
               <li><code>loss_curve_repo/csv_100</code></li>
               <li><code>loss_curve_repo/csv_400</code></li>
-              <li>每条曲线包含 <code>step</code>、<code>lr</code>、<code>loss</code> 三列。</li>
+            </ul>
+            <p>每个 CSV 包含 <code>step</code>、<code>lr</code>、<code>loss</code> 三列。</p>
+          </div>
+          <div class="figure">
+            <img src="results/figures/lr_schedules_100.png" alt="100M learning-rate schedules">
+          </div>
+        </div>
+        <div class="callout">这些曲线不是独立同分布样本，而是不同 schedule、不同训练长度和不同模型规模下的训练轨迹。因此，实验设计必须明确 train/test split，避免把跨 schedule 外推误写成普通插值。</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Experiment Split</p>
+        <h2>严格训练/测试划分</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>用途</th>
+              <th>曲线</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Strict train</td>
+              <td><code>cosine_24000.csv</code></td>
+              <td>主实验只用一条 cosine 曲线训练 base predictor 和 residual correction。</td>
+            </tr>
+            <tr>
+              <td>Main test</td>
+              <td><code>wsd_20000_24000.csv</code><br><code>wsdld_20000_24000.csv</code></td>
+              <td>核心测试集，用于评估从 cosine 到 WSD/WSDLD 的跨 schedule 外推。</td>
+            </tr>
+            <tr>
+              <td>Auxiliary test</td>
+              <td><code>cosine_72000.csv</code>、<code>constant_72000.csv</code>、<code>wsdcon_3.csv</code>、<code>wsdcon_18.csv</code></td>
+              <td>辅助检查长程外推和其它 schedule 变体，不作为主结论唯一依据。</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout good">这个划分让实验问题更清楚：模型不是在同类 schedule 上拟合再测试，而是必须面对学习率衰减结构发生变化后的系统误差。</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Metrics And Phases</p>
+        <h2>评价指标与阶段划分</h2>
+        <div class="grid cols-2">
+          <div class="card white">
+            <h3>总体曲线指标</h3>
+            <ul>
+              <li><code>RMSE</code>：强调整条曲线上的较大点误差。</li>
+              <li><code>MAE</code> 与 <code>PREDE</code>：衡量绝对误差和平均相对误差。</li>
+              <li><code>final_rel_error</code>：只看最后一步 loss 的相对误差。</li>
+              <li><code>auc_rel_error</code>：比较预测曲线与真实曲线的面积差异。</li>
             </ul>
           </div>
           <div class="card white">
-            <h3>实验划分</h3>
+            <h3>阶段划分</h3>
             <ul>
-              <li>训练曲线：<code>cosine_24000.csv</code></li>
-              <li>主测试曲线：<code>wsd_20000_24000.csv</code>、<code>wsdld_20000_24000.csv</code></li>
-              <li>辅助测试：long-horizon cosine/constant 与 wsdcon variants。</li>
+              <li><code>warmup_or_start</code>：0 到 2160 step。</li>
+              <li><code>post_warmup_stable</code>：2160 到 20000 step。</li>
+              <li><code>decay</code>：20000 到 24000 step。</li>
+              <li><code>long_horizon</code>：24000 step 之后。</li>
             </ul>
           </div>
         </div>
-        <div class="figure">
-          <img src="results/figures/lr_schedules_100.png" alt="100M learning-rate schedules">
+        <div class="callout">final error 有时会掩盖问题：某个 correction 可能改善最后一点，却牺牲 stable 阶段或整条曲线 RMSE。因此本项目同时报告 stage-wise metrics。</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Experimental Pipeline</p>
+        <h2>完整实验流程</h2>
+        <div class="steps">
+          <div class="step"><b>Step 1</b><span>读取三个模型规模的 loss、lr、step 数据，并统一曲线命名与 split。</span></div>
+          <div class="step"><b>Step 2</b><span>拟合或读取 Tissue/MPL baseline，得到 base loss prediction。</span></div>
+          <div class="step"><b>Step 3</b><span>在 cosine training residual 上训练 full ridge 或 FSL-light correction。</span></div>
+          <div class="step"><b>Step 4</b><span>在 WSD/WSDLD 和辅助曲线上输出 metrics、stage metrics、prediction CSV。</span></div>
+          <div class="step"><b>Step 5</b><span>生成对比图、消融图、稳健性图，并解释 negative findings。</span></div>
+        </div>
+        <div class="grid cols-3">
+          <article class="card accent blue"><strong>主实验</strong><p><code>scripts/run_cross_schedule.py</code> 生成 cross-schedule metrics 与 FSL-light rows。</p></article>
+          <article class="card accent"><strong>消融与稳健性</strong><p><code>run_ablation.py</code> 与 <code>run_robustness.py</code> 分析特征、alpha、multi-start 与阶段敏感性。</p></article>
+          <article class="card accent gold"><strong>图表</strong><p><code>scripts/make_figures.py</code> 汇总生成报告和答辩用 PNG。</p></article>
         </div>
       </div>
     </section>
 
     <section class="slide">
       <div class="slide-inner">
-        <p class="eyebrow">Pipeline</p>
-        <h2>从曲线读取到结果图表的完整流程</h2>
-        <div class="steps">
-          <div class="step"><b>Step 1</b><span>读取 loss curve 与 learning-rate schedule。</span></div>
-          <div class="step"><b>Step 2</b><span>拟合 Tissue 与 MPL baseline。</span></div>
-          <div class="step"><b>Step 3</b><span>在 cosine residual 上训练 full ridge / FSL-light。</span></div>
-          <div class="step"><b>Step 4</b><span>评估 WSD、WSDLD 与辅助曲线。</span></div>
-          <div class="step"><b>Step 5</b><span>输出 metrics、prediction CSV 与报告图。</span></div>
+        <p class="eyebrow">Baseline 1</p>
+        <h2>Multi-Power Law：累计学习率与学习率变化项</h2>
+        <div class="grid cols-2">
+          <div>
+            <div class="formula">L(t) = L0 + A · S1(t)<sup>-α</sup> + B · LD(t)</div>
+            <div class="card accent blue">
+              <strong>直观解释</strong>
+              <p><code>S1(t)</code> 表示累计学习率，刻画训练推进量；<code>LD(t)</code> 使用学习率变化和饱和幂律函数描述 schedule decay 带来的额外影响。</p>
+            </div>
+          </div>
+          <div class="card white">
+            <h3>项目中的实现</h3>
+            <ul>
+              <li>预测入口为 <code>src/predictors.py</code> 的 <code>predict_mpl_curve()</code>。</li>
+              <li>主实验中使用 SciPy L-BFGS-B wrapper 在 <code>cosine_24000.csv</code> 上重新拟合 MPL-like 参数。</li>
+              <li>由于目标函数非凸，Direction B 使用 multi-start 检查初值敏感性。</li>
+            </ul>
+          </div>
         </div>
-        <div class="grid cols-3">
-          <article class="card accent blue"><strong>总体指标</strong><p>RMSE、MAE、PREDE、WorstE、R2、final relative error、AUC relative error。</p></article>
-          <article class="card accent"><strong>阶段指标</strong><p>warmup、post-warmup stable、decay、long-horizon 四段独立评估。</p></article>
-          <article class="card accent gold"><strong>稳健性指标</strong><p>alpha sweep、MPL multi-start、decay minus stable RMSE。</p></article>
+        <div class="callout">MPL 是强 baseline，但它在 decay 阶段可能出现明显误差，因此不能只看总体平均结果。</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Baseline 2</p>
+        <h2>Tissue Annealing Law：简单但稳定的 decay memory</h2>
+        <div class="grid cols-2">
+          <div>
+            <div class="formula">L(t) = L0 + A · S1(t)<sup>-α</sup> - C · S2(t)</div>
+            <div class="card accent">
+              <strong>核心思想</strong>
+              <p><code>S2(t)</code> 只累积正向学习率下降信号，并通过 <code>lambda_decay</code> 保留一段 memory。它用更少参数表达 decay 影响，解释性强。</p>
+            </div>
+          </div>
+          <div class="card white">
+            <h3>为什么 Tissue 很重要</h3>
+            <ul>
+              <li>它不是最复杂的方法，但在当前数据上整体表现稳定。</li>
+              <li>它为 residual correction 提供一个可解释 base predictor。</li>
+              <li>它的阶段误差比 MPL 更均衡，帮助解释 WSD/WSDLD decay 阶段。</li>
+            </ul>
+          </div>
         </div>
+        <div class="callout good">这个项目中的一个关键发现是：在小数据跨 schedule 外推中，简单可解释的模型有时比自由度更高的方法更可靠。</div>
       </div>
     </section>
 
     <section class="slide">
       <div class="slide-inner">
         <p class="eyebrow">3. 复现实验结果</p>
-        <h2>Tissue 和 MPL 已作为可靠 baseline 跑通</h2>
+        <h2>复现结果与实现差异</h2>
         <div class="grid cols-2">
           <div class="card white">
-            <h3>复现实验设置</h3>
+            <h3>复现流程</h3>
             <ul>
-              <li><code>scripts/run_reproduction.py</code> 跑 paper-like split。</li>
-              <li>输出 <code>results/metrics/reproduction_metrics.csv</code>。</li>
-              <li>主实验中 MPL-like 参数使用 SciPy L-BFGS-B 在 cosine 上重新拟合。</li>
+              <li><code>scripts/run_reproduction.py</code> 跑 paper-like train split。</li>
+              <li>输出 <code>results/metrics/reproduction_metrics.csv</code>，共 36 rows。</li>
+              <li>主实验使用 <code>run_cross_schedule.py</code> 在 strict cosine split 下重新比较。</li>
             </ul>
           </div>
           <div class="card white">
-            <h3>关键差异与困难</h3>
+            <h3>关键差异</h3>
             <ul>
-              <li>原仓库默认参数和 fresh refit 并不完全等价。</li>
-              <li>MPL 拟合非凸，对初值和优化设置敏感。</li>
-              <li>只用一条 cosine 曲线训练 residual correction，信息量很有限。</li>
+              <li>默认 reproduction 可使用预计算 MPL 参数，主实验则使用 fresh SciPy refit。</li>
+              <li>SciPy L-BFGS-B 与原仓库 PyTorch AdamW 拟合流程不完全相同。</li>
+              <li>MPL 参数敏感，因此单次 refit 不能代表全部不确定性。</li>
             </ul>
           </div>
         </div>
         <div class="metric-row">
-          <div class="metric"><small>Tissue 平均 RMSE</small><b>0.010101</b></div>
-          <div class="metric"><small>MPL 平均 RMSE</small><b>0.010571</b></div>
-          <div class="metric"><small>Tissue final rel.</small><b>0.004618</b></div>
-          <div class="metric"><small>MPL AUC rel.</small><b>0.001878</b></div>
+          <div class="metric"><small>Tissue WSD/WSDLD 平均 RMSE</small><b>0.010101</b></div>
+          <div class="metric"><small>MPL WSD/WSDLD 平均 RMSE</small><b>0.010571</b></div>
+          <div class="metric"><small>Tissue final relative error</small><b>0.004618</b></div>
+          <div class="metric"><small>MPL AUC relative error</small><b>0.001878</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Residual Correction Motivation</p>
+        <h2>为什么尝试 residual correction？</h2>
+        <p class="lead">MPL 和 Tissue 都已经把主要 loss 下降趋势建模出来，但在从 cosine 外推到 WSD/WSDLD 时，decay 阶段仍可能出现系统偏差。Residual correction 的想法是：保留 base predictor 的主体结构，只学习它在训练曲线上的残差。</p>
+        <div class="grid cols-2">
+          <div class="formula">r(t) = y_true(t) - y_base(t)<br>r(t) ≈ X(t)w<br>y_pred(t) = y_base(t) + X(t)w</div>
+          <div class="card white">
+            <h3>关键风险</h3>
+            <ul>
+              <li>训练 residual correction 的数据只有一条 cosine curve。</li>
+              <li>如果特征太多，模型会学习 cosine residual 的局部形状，而不是可迁移规律。</li>
+              <li>因此 full ridge 本身也可以作为过拟合诊断。</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout risk">Residual correction 的目标不是替代 baseline，而是检验 schedule functional 是否能解释 baseline 留下的系统误差。</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Full Ridge Diagnosis</p>
+        <h2>Full ridge 失败说明了什么？</h2>
+        <div class="grid cols-2">
+          <div class="card white">
+            <h3>Full ridge 特征</h3>
+            <ul>
+              <li><code>bias</code>、<code>log_s1</code>、<code>eta_norm</code>、<code>s1_sq</code></li>
+              <li><code>decay_cum</code> 与三种 decay memory</li>
+              <li><code>t_norm</code> 与 <code>is_decay</code></li>
+            </ul>
+          </div>
+          <div class="card white">
+            <h3>观察结果</h3>
+            <ul>
+              <li>Tissue + full ridge 平均 RMSE 从 0.010101 变为 0.023623。</li>
+              <li>MPL + full ridge 平均 RMSE 从 0.010571 变为 0.028372。</li>
+              <li>有些 final error 改善，但整条曲线误差明显变差。</li>
+            </ul>
+          </div>
+        </div>
+        <div class="figure">
+          <img src="results/figures/main_comparison_grid.png" alt="Main comparison grid">
         </div>
       </div>
     </section>
@@ -588,20 +799,20 @@
     <section class="slide">
       <div class="slide-inner">
         <p class="eyebrow">4. 方法与结果对比：Direction A</p>
-        <h2>FSL-light：用更少的 schedule functional 做残差修正</h2>
+        <h2>FSL-light：更低自由度的 schedule functional</h2>
         <div class="grid cols-2">
-          <div>
-            <div class="card accent blue">
-              <strong>Full ridge</strong>
-              <p>使用 10 个特征，包括 <code>log_s1</code>、<code>s1_sq</code>、多种 decay memory 和 <code>t_norm</code>。结果显示容易过拟合 cosine residual。</p>
-            </div>
-            <div class="card accent">
-              <strong>FSL-light</strong>
-              <p>只保留 <code>bias</code>、<code>log_tau</code>、<code>eta_norm</code>、<code>decay_conv</code>、<code>is_decay</code>，强调 intrinsic time 与 decay convolution。</p>
-            </div>
+          <div class="card white">
+            <h3>设计动机</h3>
+            <p>Task 2 提升计划参考 Functional Scaling Law 的 intrinsic time 和 convolutional schedule functional，避免把 full ridge 特征堆得过多。FSL-light 仍以 Tissue/MPL 为 base predictor，只学习轻量 residual。</p>
+            <ul>
+              <li><code>log_tau</code>：归一化累计学习率的对数坐标。</li>
+              <li><code>eta_norm</code>：当前学习率相对峰值。</li>
+              <li><code>decay_conv</code>：平滑后的学习率衰减记忆。</li>
+              <li><code>is_decay</code>：是否进入 decay 相关状态。</li>
+            </ul>
           </div>
           <div class="figure tall">
-            <img src="results/figures/fsl_light_comparison.png" alt="Baseline vs full ridge vs FSL-light on WSD/WSDLD">
+            <img src="results/figures/fsl_light_comparison.png" alt="FSL-light comparison">
           </div>
         </div>
       </div>
@@ -609,143 +820,242 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <p class="eyebrow">Main Comparison</p>
-        <h2>FSL-light 没有全面胜出，但验证了过拟合诊断</h2>
+        <p class="eyebrow">Direction A Results</p>
+        <h2>主实验结果：FSL-light 更克制，但未稳定超过 baseline</h2>
         <table>
           <thead>
             <tr>
               <th>方法</th>
               <th class="num">平均 RMSE</th>
               <th class="num">平均 final relative error</th>
+              <th class="num">平均 AUC relative error</th>
               <th>解释</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>Tissue</td><td class="num">0.010101</td><td class="num">0.004618</td><td>最稳定的简单 baseline。</td></tr>
-            <tr><td>Tissue + full ridge</td><td class="num">0.023623</td><td class="num">0.006110</td><td>RMSE 变差，说明 full ridge 过拟合。</td></tr>
-            <tr><td>Tissue + FSL-light</td><td class="num">0.022299</td><td class="num">0.004571</td><td>final error 接近 Tissue，但整体 RMSE 仍变差。</td></tr>
-            <tr><td>MPL</td><td class="num">0.010571</td><td class="num">0.010235</td><td>强 baseline，AUC error 最低。</td></tr>
-            <tr><td>MPL + full ridge</td><td class="num">0.028372</td><td class="num">0.007102</td><td>final error 有改善，但整条曲线误差变大。</td></tr>
-            <tr><td>MPL + FSL-light</td><td class="num">0.028353</td><td class="num">0.010768</td><td>比 full ridge 略克制，但仍弱于 MPL。</td></tr>
+            <tr><td>Tissue</td><td class="num">0.010101</td><td class="num">0.004618</td><td class="num">0.002255</td><td>最稳定的简单 baseline。</td></tr>
+            <tr><td>Tissue + full ridge</td><td class="num">0.023623</td><td class="num">0.006110</td><td class="num">0.006522</td><td>RMSE 明显变差，说明 full ridge 过拟合。</td></tr>
+            <tr><td>Tissue + FSL-light</td><td class="num">0.022299</td><td class="num">0.004571</td><td class="num">0.006112</td><td>final error 接近 Tissue，但整体 RMSE 仍变差。</td></tr>
+            <tr><td>MPL</td><td class="num">0.010571</td><td class="num">0.010235</td><td class="num">0.001878</td><td>强 baseline，AUC error 最低。</td></tr>
+            <tr><td>MPL + full ridge</td><td class="num">0.028372</td><td class="num">0.007102</td><td class="num">0.007580</td><td>final error 有改善，但整条曲线明显变差。</td></tr>
+            <tr><td>MPL + FSL-light</td><td class="num">0.028353</td><td class="num">0.010768</td><td class="num">0.006129</td><td>比 full ridge 的 AUC error 略低，但 RMSE 仍高。</td></tr>
           </tbody>
         </table>
-        <div class="callout risk">结论不能写成“我们的 correction 全面更好”。更准确的说法是：复杂 residual correction 在 cosine-only 设置下很容易不可迁移。</div>
+        <div class="callout">这组结果支持的不是“FSL-light 全面胜出”，而是“有约束的 residual correction 比 naive feature stacking 更合理，但当前训练信息仍不足”。</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Ablation Study</p>
+        <h2>哪些 residual 特征真正有用？</h2>
+        <div class="grid cols-2">
+          <div class="card white">
+            <h3>消融结论</h3>
+            <ul>
+              <li>对 Tissue base，<code>lr_level</code> 的平均 RMSE 为 0.008984，略优于原始 Tissue。</li>
+              <li><code>cumulative</code> 与 <code>decay_cum</code> 对 Tissue 也有轻微改善，平均 RMSE 约 0.00988。</li>
+              <li>对 MPL base，<code>bias_only</code> 与 <code>cumulative</code> 更稳，复杂 decay 特征反而变差。</li>
+            </ul>
+          </div>
+          <div class="figure">
+            <img src="results/figures/ablation_bar.png" alt="Residual feature ablation">
+          </div>
+        </div>
+        <div class="callout good">Ablation 说明：有效 residual correction 不是简单增加特征数量，而是要匹配 base predictor 已经解释和未解释的误差结构。</div>
       </div>
     </section>
 
     <section class="slide">
       <div class="slide-inner">
         <p class="eyebrow">Direction B</p>
-        <h2>稳健性实验解释了结果为什么不稳定</h2>
+        <h2>稳健性实验：alpha sweep 与 MPL multi-start</h2>
         <div class="grid cols-2">
           <div class="figure">
-            <img src="results/figures/alpha_sweep_sensitivity.png" alt="FSL-light alpha sensitivity">
+            <img src="results/figures/alpha_sweep_sensitivity.png" alt="Alpha sweep sensitivity">
           </div>
-          <div class="grid">
-            <div class="card accent gold">
-              <strong>Alpha sweep</strong>
-              <p>更强正则化能降低 FSL-light 过拟合。alpha=1 时，Tissue + FSL-light 平均 RMSE 降到 0.015387，MPL + FSL-light 降到 0.017510，但仍没有稳定超过 baseline。</p>
-            </div>
-            <div class="card accent blue">
-              <strong>MPL multi-start</strong>
-              <p>25M、100M、400M 的 RMSE std 分别约为 0.003145、0.003253、0.003979，说明非凸拟合存在初值敏感性。</p>
-            </div>
+          <div class="card white">
+            <h3>解释</h3>
+            <ul>
+              <li>FSL-light 使用 ridge correction，因此 alpha 会直接影响过拟合程度。</li>
+              <li>alpha=1 时，Tissue + FSL-light 平均 RMSE 降到 0.015387，MPL + FSL-light 降到 0.017510。</li>
+              <li>更强正则能缓解过拟合，但仍没有稳定超过 Tissue/MPL baseline。</li>
+              <li>MPL multi-start 的 RMSE std 约为 0.003 到 0.004，说明非凸拟合存在可见不确定性。</li>
+            </ul>
           </div>
         </div>
+        <div class="callout">Direction B 的价值在于提高结论可信度：当前限制主要来自训练信息不足与参数敏感性，而不是某个单一超参数没有调好。</div>
       </div>
     </section>
 
     <section class="slide">
       <div class="slide-inner">
-        <p class="eyebrow">Stage-wise Analysis</p>
-        <h2>只看 final error 容易误判，阶段误差更关键</h2>
+        <p class="eyebrow">Stage Sensitivity</p>
+        <h2>阶段误差揭示了 full-curve RMSE 背后的机制</h2>
         <div class="grid cols-2">
           <div class="figure tall">
-            <img src="results/figures/stage_fsl_light_error.png" alt="Stage-wise FSL-light comparison">
+            <img src="results/figures/stage_fsl_light_error.png" alt="Stage-wise FSL-light error">
           </div>
-          <div>
-            <div class="card accent blue">
-              <strong>MPL 的 decay 问题</strong>
-              <p>主测试曲线中，MPL 的 decay RMSE 明显高于 stable RMSE，平均 ratio 约为 5.70。</p>
-            </div>
-            <div class="card accent">
-              <strong>Tissue 更均衡</strong>
-              <p>Tissue 的 decay/stable ratio 约为 1.44，虽然模型简单，但阶段表现更稳。</p>
-            </div>
-            <div class="card accent red">
-              <strong>Correction 的副作用</strong>
-              <p>full ridge 和 FSL-light 可能把误差从 decay 段转移到 stable 段，导致整体 RMSE 不降反升。</p>
-            </div>
+          <div class="card white">
+            <h3>主要发现</h3>
+            <ul>
+              <li>MPL 的 decay RMSE 明显高于 stable RMSE，平均 ratio 约为 5.70。</li>
+              <li>Tissue 的 decay/stable ratio 约为 1.44，阶段表现更均衡。</li>
+              <li>full ridge 和 FSL-light 往往会把误差从 decay 段转移到 stable 段。</li>
+              <li>因此，final error 或 decay error 的局部改善不一定意味着整体预测变好。</li>
+            </ul>
           </div>
         </div>
+        <div class="callout risk">这也是本项目最重要的分析之一：一个方法可能看起来修正了 decay，但如果破坏了 stable 阶段，整体曲线预测仍会失败。</div>
       </div>
     </section>
 
     <section class="slide">
       <div class="slide-inner">
         <p class="eyebrow">Direction C</p>
-        <h2>NCPL-style surrogate 是高风险 baseline，而不是主结论</h2>
+        <h2>NCPL-style neural surrogate：高风险 baseline</h2>
         <div class="grid cols-2">
-          <div>
-            <div class="card white">
-              <h3>方法</h3>
-              <ul>
-                <li>输入：<code>log_model_size</code>、<code>step_norm</code>、<code>log_step</code> 与 FSL-light schedule features。</li>
-                <li>模型：带 <code>StandardScaler</code> 的 <code>MLPRegressor</code>。</li>
-                <li>目标：预测 <code>log(loss)</code>，再指数变换回 loss。</li>
-              </ul>
-            </div>
-            <div class="metric-row">
-              <div class="metric"><small>NCPL RMSE</small><b>1.460152</b></div>
-              <div class="metric"><small>AUC rel.</small><b>0.427431</b></div>
-            </div>
+          <div class="card white">
+            <h3>方法设计</h3>
+            <ul>
+              <li>特征：<code>log_model_size</code>、<code>step_norm</code>、<code>log_step</code>、<code>log_tau</code>、<code>eta_norm</code>、<code>decay_conv</code>、<code>is_decay</code>。</li>
+              <li>模型：<code>StandardScaler</code> + <code>MLPRegressor</code>。</li>
+              <li>目标：预测 <code>log(loss)</code>，再指数变换回 loss。</li>
+              <li>输出：<code>ncpl_surrogate_metrics.csv</code>、stage metrics、prediction CSV 和 comparison figure。</li>
+            </ul>
           </div>
           <div class="figure tall">
             <img src="results/figures/ncpl_surrogate_comparison.png" alt="NCPL-style surrogate comparison">
           </div>
         </div>
-        <div class="callout risk">当前 schedule 数量太少，神经 surrogate 很难学到可迁移规律。这个方向更适合写入 future work。</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Direction C Results</p>
+        <h2>神经 surrogate 的当前结果说明数据规模不足</h2>
+        <div class="metric-row">
+          <div class="metric"><small>NCPL-style 平均 RMSE</small><b>1.460152</b></div>
+          <div class="metric"><small>平均 final relative error</small><b>0.044363</b></div>
+          <div class="metric"><small>平均 AUC relative error</small><b>0.427431</b></div>
+          <div class="metric"><small>主测试 rows</small><b>6</b></div>
+        </div>
+        <div class="grid cols-2">
+          <div class="card accent red">
+            <strong>为什么误差大？</strong>
+            <p>当前数据只有三个模型规模和少量 schedule。对于端到端神经 surrogate 来说，这不是足够大的配置空间，模型容易记住训练 schedule，而不是学习可迁移规律。</p>
+          </div>
+          <div class="card accent gold">
+            <strong>如何写入报告？</strong>
+            <p>Direction C 应被解读为 high-risk baseline 或 future work。它支持一个负面但有价值的结论：当前课程数据规模下，不宜把神经 surrogate 作为主方法。</p>
+          </div>
+        </div>
       </div>
     </section>
 
     <section class="slide">
       <div class="slide-inner">
         <p class="eyebrow">5. 分析与思考</p>
-        <h2>实验结果支持一个更克制的结论</h2>
-        <div class="grid cols-2">
-          <div class="card white">
-            <h3>主要发现</h3>
-            <ul>
-              <li>Tissue 和 MPL baseline 已经很强，尤其是在小数据设置下。</li>
-              <li>full ridge 的失败不是代码错误，而是 residual learning 的过拟合信号。</li>
-              <li>FSL-light 更可解释，但训练信息不足时仍不能保证泛化。</li>
-              <li>stage-wise metrics 比单一 final error 更能解释模型行为。</li>
-            </ul>
-          </div>
-          <div class="card white">
-            <h3>进一步思考</h3>
-            <ul>
-              <li>如果能加入更多 schedule，residual correction 可能更可靠。</li>
-              <li>如果有更多模型规模和训练日志，NCPL-style surrogate 才更有意义。</li>
-              <li>未来可以把 FSL-light 作为低复杂度先验，与更多数据结合。</li>
-            </ul>
-          </div>
-        </div>
-        <div class="callout good">最终贡献：一个可复现的跨 schedule evaluation pipeline，以及对 residual correction 在小数据设置下何时失效的系统诊断。</div>
+        <h2>综合结果分析</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>方向</th>
+              <th>结果</th>
+              <th>说明</th>
+              <th>最终定位</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tissue/MPL baseline</td>
+              <td>表现稳定，平均 RMSE 约 0.010</td>
+              <td>简单模型已经能解释大部分 loss 下降趋势。</td>
+              <td>主对照与可信结论基础。</td>
+            </tr>
+            <tr>
+              <td>Full ridge</td>
+              <td>整体 RMSE 明显变差</td>
+              <td>自由度过高，容易过拟合 cosine residual。</td>
+              <td>过拟合诊断，不作为成功方法。</td>
+            </tr>
+            <tr>
+              <td>FSL-light</td>
+              <td>更可解释，但仍未超过 baseline</td>
+              <td>低复杂度 schedule functional 更合理，但训练信息不足。</td>
+              <td>方法探索与 negative finding。</td>
+            </tr>
+            <tr>
+              <td>NCPL-style surrogate</td>
+              <td>误差远高于 baseline</td>
+              <td>小数据下神经模型不具备可靠泛化。</td>
+              <td>Future work baseline。</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
     <section class="slide">
       <div class="slide-inner">
-        <p class="eyebrow">Summary</p>
-        <h2>一句话总结</h2>
+        <p class="eyebrow">Limitations</p>
+        <h2>必要说明与局限性</h2>
+        <div class="grid cols-2">
+          <div class="card white">
+            <h3>实验局限</h3>
+            <ul>
+              <li>项目不重新训练 LLM，只基于已有 loss curves 做拟合与预测。</li>
+              <li>主实验只用一条 <code>cosine_24000.csv</code> 训练 residual correction。</li>
+              <li>可用于神经 surrogate 的 schedule 和模型规模数量都偏少。</li>
+            </ul>
+          </div>
+          <div class="card white">
+            <h3>实现说明</h3>
+            <ul>
+              <li>MPL fresh refit 使用 SciPy L-BFGS-B，与原仓库 AdamW 流程不同。</li>
+              <li>full ridge 和 FSL-light 的失败不是 bug，而是泛化风险的实验表现。</li>
+              <li>报告图表面向答辩展示，深入分析应读取 <code>results/metrics/*.csv</code>。</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout">这些限制并不削弱项目价值，反而帮助界定结论边界：在小数据、跨 schedule、强 baseline 的设置下，模型复杂度必须非常克制。</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Future Work</p>
+        <h2>进一步工作</h2>
+        <div class="grid cols-3">
+          <article class="card accent blue">
+            <strong>更多 schedule 数据</strong>
+            <p>增加不同 decay length、不同 warmup、不同 plateau 的 schedule，有助于 residual correction 学到真正可迁移的 schedule functional。</p>
+          </article>
+          <article class="card accent">
+            <strong>更多模型规模</strong>
+            <p>当前只有 25M、100M、400M。更密集的 model-size grid 能支持更稳健的 scaling analysis。</p>
+          </article>
+          <article class="card accent gold">
+            <strong>更强 surrogate</strong>
+            <p>当训练日志足够多时，可以重新评估 NCPL-style neural surrogate，并与 FSL-light 先验结合。</p>
+          </article>
+        </div>
+        <div class="callout good">未来最值得做的不是盲目增加模型复杂度，而是增加跨 schedule 训练信息，并用 stage-wise metrics 保持诊断透明。</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow">Conclusion</p>
+        <h2>最终结论与贡献</h2>
         <div class="card white accent green">
-          <p class="subtitle">本项目把 Multi-Power Law loss prediction 扩展为完整的跨学习率调度评估平台：复现 Tissue/MPL，加入 FSL-light、稳健性实验和 NCPL-style surrogate，并说明在课程数据规模下，简单可解释 baseline 比复杂 residual 或神经 surrogate 更可靠。</p>
+          <p class="subtitle">本项目把原 Multi-Power Law 仓库扩展为完整的跨学习率调度损失曲线预测评估平台：复现 Tissue/MPL baseline，实现 FSL-light residual correction、稳健性/不确定性实验和 NCPL-style surrogate，并用当前结果说明，在课程数据规模下，简单可解释 baseline 比复杂 residual 或神经 surrogate 更可靠，而 residual correction 的主要价值是揭示跨 schedule 外推中的过拟合与阶段性误差结构。</p>
         </div>
         <div class="grid cols-3">
-          <article class="card accent blue"><strong>可复现</strong><p>所有指标和图表由脚本生成，结果保存在 <code>results/metrics</code> 与 <code>results/figures</code>。</p></article>
-          <article class="card accent"><strong>可解释</strong><p>通过 decay memory、intrinsic time 和 stage-wise error 分析 schedule 影响。</p></article>
-          <article class="card accent gold"><strong>可扩展</strong><p>后续可接入更多 schedule、更大训练日志和更强 surrogate 模型。</p></article>
+          <article class="card accent blue"><strong>复现</strong><p>完成 Tissue/MPL 复现实验、strict split 主实验和跨 schedule metrics。</p></article>
+          <article class="card accent"><strong>扩展</strong><p>实现 FSL-light、alpha sweep、multi-start、stage sensitivity 和 NCPL-style surrogate。</p></article>
+          <article class="card accent gold"><strong>分析</strong><p>给出诚实的 negative findings，并解释为什么复杂修正不一定优于强 baseline。</p></article>
         </div>
       </div>
     </section>
@@ -753,7 +1063,7 @@
 
   <div class="controls" aria-label="slide navigation">
     <button class="nav-btn" id="prevBtn" type="button" aria-label="Previous slide">‹</button>
-    <div class="counter" id="counter">1 / 12</div>
+    <div class="counter" id="counter">1 / 1</div>
     <button class="nav-btn" id="nextBtn" type="button" aria-label="Next slide">›</button>
   </div>
 
@@ -769,6 +1079,12 @@
       return Math.max(0, Math.min(index, slides.length - 1));
     }
 
+    function readHashIndex() {
+      const raw = window.location.hash.replace("#", "");
+      const value = Number.parseInt(raw, 10);
+      return Number.isFinite(value) ? value - 1 : 0;
+    }
+
     function render(index) {
       current = clampIndex(index);
       slides.forEach((slide, slideIndex) => {
@@ -779,12 +1095,6 @@
       counter.textContent = `${current + 1} / ${slides.length}`;
       progressBar.style.width = `${((current + 1) / slides.length) * 100}%`;
       history.replaceState(null, "", `#${current + 1}`);
-    }
-
-    function readHashIndex() {
-      const raw = window.location.hash.replace("#", "");
-      const value = Number.parseInt(raw, 10);
-      return Number.isFinite(value) ? value - 1 : 0;
     }
 
     prevBtn.addEventListener("click", () => render(current - 1));
